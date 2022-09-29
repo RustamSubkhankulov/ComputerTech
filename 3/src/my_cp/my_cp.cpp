@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <getopt.h>
+#include <sys/stat.h>
 
 //---------------------------------------------------------
 
@@ -29,15 +30,23 @@ static const char Short_opt_str[] = {'i', 'f', 'v'};
 
 static int open_file(const char* filename, int flags);
 
-static int close_file(int file_descr);
+static int close_file(const int file_descr);
 
-static int write_file(int fd_in, int fd_out);
+static int write_file(const int fd_in, const int fd_out);
 
 static int get_options(const int argc, const char** argv, int options[]);
 
-static int cp_single_file(int options[], const char* src, const char* dst);
+static int cp_file_to_file(const int options[], const char* src, const char* dst);
 
-static int cp_several_files(int options[], int optnum, const char* argv[]);
+static int cp_to_dir(const int options[], int optnum, const int argc, const char* argv[]);
+
+static int copy_access_rights(const int src_fd, const int ds_fd);
+
+static int fchange_mod(const int fd, const mode_t mode);
+
+static int is_dir(const char* pathname);
+
+static int copy_file(const int src_fd, const int dst_fd);
 
 //=========================================================
 
@@ -45,26 +54,29 @@ int my_cp(int argc, const char** argv)
 {
     int err = 0; 
 
-    int options[Num_opt] = { 0 };                      // all options are enables by default
+    int options[Num_opt] = { 0 }; // all options are enables by default
 
     optind = get_options(argc, argv, options);
     if (optind < 0)
         return optind;
 
     //
-    printf("\n i f v: %d %d %d \n", options[0], options[1], options[2]);
+    //printf("\n i f v: %d %d %d \n", options[0], options[1], options[2]);
     //
 
     int argnum = argc - optind;
 
     if (argnum == 2)
     {
-        err = cp_single_file(options, argv[optind], argv[optind + 1]);
+        if (is_dir(argv[argc - 1]))
+            err = cp_to_dir(options, optind, argc, argv);
+        else
+            err = cp_file_to_file(options, argv[optind], argv[optind + 1]);
     }
 
     else if (argnum > 2)
     {
-        err = cp_several_files(options, argnum, argv);
+        err = cp_to_dir(options, optind, argc, argv);
     }
 
     else
@@ -74,41 +86,11 @@ int my_cp(int argc, const char** argv)
     }
 
     return err;
-
-    /*
-    if (argc == 1)
-    {
-        err = write_file(0, 1);
-        if (err)
-            return err;
-    }
-
-    for (int iter = 1; iter < argc; iter++)
-    {
-        const char* filename = argv[iter];
-
-        int input_fd = open_file(filename);
-        if (input_fd < 0)
-        {
-            err = -input_fd;
-            continue;
-        }
-
-        err = write_file(input_fd, 1);
-        if (err)
-            return err;
-
-        err = close_file(input_fd);
-        if (err)
-            return err;
-    }
-    */
-
 }
 
 //---------------------------------------------------------
 
-static int cp_single_file(int options[], const char* src, const char* dst)
+static int cp_file_to_file(const int options[], const char* src, const char* dst)
 {
     assert(options);
     assert(src);
@@ -118,13 +100,21 @@ static int cp_single_file(int options[], const char* src, const char* dst)
     if (src_fd < 0)
         return -src_fd;
 
-    int dst_fd = open_file(dst, O_WRONLY | O_CREAT);
-    if (dst_fd < 0)
-        return -dst_fd;
+    int open_flags = O_WRONLY | O_CREAT;
+    if (options[I_option] == 1)
+        open_flags |= O_EXCL;
 
-    int write_err = write_file(src_fd, dst_fd);
-    if (write_err)
-        return write_err;
+    int dst_fd = open_file(dst, open_flags);
+    if (dst_fd < 0)
+    {
+            
+
+        return -dst_fd;
+    }
+
+    int copy_err = copy_file(src_fd, dst_fd);
+    if (copy_err)
+        return copy_err;
 
     int close_err = close_file(src_fd);
     if (close_err)
@@ -139,13 +129,102 @@ static int cp_single_file(int options[], const char* src, const char* dst)
 
 //---------------------------------------------------------
 
-static int cp_several_files(int options[], int optnum, const char* argv[])
+static int copy_file(const int src_fd, const int dst_fd)
+{
+    int write_err = write_file(src_fd, dst_fd);
+    if (write_err)
+        return write_err;
+
+    int chng_rights = copy_access_rights(src_fd, dst_fd);
+    if (chng_rights)
+        return chng_rights;
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static int copy_access_rights(const int src_fd, const int dst_fd)
+{
+    struct stat src_stat = {};
+
+    int fstat_ret = fstat(src_fd, &src_stat);
+    if (fstat_ret != 0)
+    {
+        fprintf(stderr, "fstat() system call failed: %d: %s \n", src_fd, strerror(errno));
+        return -errno;
+    }
+
+    int is_changed = fchange_mod(dst_fd, src_stat.st_mode);
+    if (is_changed)
+        return is_changed;
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static int cp_to_dir(const int options[], int optnum, const int argc, const char* argv[])
 {
     assert(options);
     assert(argv);
-    assert(optnum > 2);
+
+    int dir_fd = open_file(argv[argc - 1], O_DIRECTORY);
+    if (dir_fd < 0)
+        return dir_fd;
+
+    for (int cur_src = optnum; cur_src < argc - 1; cur_src++)
+    {
+        int cur_src_fd = open_file(argv[optnum], O_RDONLY);
+        if (cur_src_fd < 0)
+            return cur_src_fd;
+
+        int cur_dst_fd = openat(dir_fd, argv[optnum], O_WRONLY | O_CREAT);
+        if (cur_dst_fd < 0)
+        {
+            fprintf(stderr, "openat() system call failed: %s: %s \n", argv[optnum], strerror(errno));
+            return -errno;
+        }
+
+        int copy_err = copy_file(cur_src_fd, cur_dst_fd);
+        if (copy_err)
+            return copy_err;
+
+        int close_err = close_file(cur_src_fd);
+        if (close_err)
+            return close_err;
+        
+        close_err = close_file(cur_dst_fd);
+        if (close_err)
+            return close_err;
+    }
+
+    int close_dir = close_file(dir_fd);
+    if (close_dir)
+        return close_dir;
 
     return 0;
+}
+
+//---------------------------------------------------------
+
+static int is_dir(const char* pathname)
+{
+    struct stat path_stat = {};
+
+    int stat_ret  = stat(pathname, &path_stat);
+    if (stat_ret != 0)
+    {
+        if (errno != ENOENT)
+        {
+            fprintf(stderr, "stat() system call failed: %s: %s %d\n", pathname, strerror(errno), errno);
+            return -errno;
+        }
+        else
+            return 0;
+    }
+
+    return S_ISDIR(path_stat.st_mode);
 }
 
 //---------------------------------------------------------
@@ -192,7 +271,21 @@ static int get_options(const int argc, const char** argv, int options[])
 
 //---------------------------------------------------------
 
-static int open_file(const char* filename, int flags)
+static int fchange_mod(const int fd, const mode_t mode)
+{
+    int fchmod_ret = fchmod(fd, mode);
+    if (fchmod_ret == -1)
+    {
+        fprintf(stderr, "fchmod() system call failed: %d: %s \n", fd, strerror(errno));
+        return -errno;
+    }
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static int open_file(const char* filename, const int flags)
 {
     assert(filename);
 
@@ -208,7 +301,7 @@ static int open_file(const char* filename, int flags)
 
 //---------------------------------------------------------
 
-int close_file(int file_descr)
+static int close_file(const int file_descr)
 {
     if (close(file_descr) < 0)
     {
@@ -221,7 +314,7 @@ int close_file(int file_descr)
 
 //---------------------------------------------------------
 
-ssize_t safe_write(int fd, const void* buf, size_t count)
+ssize_t safe_write(const int fd, const void* buf, size_t count)
 {
     assert(buf);
 
@@ -239,7 +332,7 @@ ssize_t safe_write(int fd, const void* buf, size_t count)
 
 //---------------------------------------------------------
 
-int write_file(int fd_in, int fd_out)
+static int write_file(const int fd_in, const int fd_out)
 {
     char buff[Buffer_size];
 
