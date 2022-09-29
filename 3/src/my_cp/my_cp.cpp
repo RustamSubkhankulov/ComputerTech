@@ -63,11 +63,7 @@ int my_cp(int argc, const char** argv)
     optind = get_options(argc, argv, options);
     if (optind < 0)
         return optind;
-
-    //
-    // printf("\n i f v: %d %d %d \n", options[0], options[1], options[2]);
-    //
-
+        
     int argnum = argc - optind;
 
     if (argnum == 2)
@@ -267,8 +263,6 @@ static int copy_access_rights(const int src_fd, const int dst_fd)
     int changed_err = fchange_mod(dst_fd, src_stat.st_mode);
     if (changed_err)
         return changed_err;
-
-    fprintf(stderr, "%x", (int)src_stat.st_mode);
 
     return 0;
 }
