@@ -48,6 +48,10 @@ static int is_dir(const char* pathname);
 
 static int copy_file(const int src_fd, const int dst_fd);
 
+static int ask_user(const char* pathname);
+
+static int open_destination_dir(const int options[], const char* pathname, const int dir_fd);
+
 //=========================================================
 
 int my_cp(int argc, const char** argv)
@@ -61,7 +65,7 @@ int my_cp(int argc, const char** argv)
         return optind;
 
     //
-    //printf("\n i f v: %d %d %d \n", options[0], options[1], options[2]);
+    // printf("\n i f v: %d %d %d \n", options[0], options[1], options[2]);
     //
 
     int argnum = argc - optind;
@@ -73,12 +77,10 @@ int my_cp(int argc, const char** argv)
         else
             err = cp_file_to_file(options, argv[optind], argv[optind + 1]);
     }
-
     else if (argnum > 2)
     {
         err = cp_to_dir(options, optind, argc, argv);
     }
-
     else
     {
         fprintf(stderr, "cp: missing args \n");
@@ -90,27 +92,129 @@ int my_cp(int argc, const char** argv)
 
 //---------------------------------------------------------
 
-static int cp_file_to_file(const int options[], const char* src, const char* dst)
+static int ask_user(const char* pathname)
 {
-    assert(options);
-    assert(src);
-    assert(dst);
+    assert(pathname);
+    printf("my_cp:  переписать '%s'? ", pathname);
 
-    int src_fd = open_file(src, O_RDONLY);
-    if (src_fd < 0)
-        return -src_fd;
+    char symb = 0;
 
+    int scanned  = scanf("%c", &symb);
+    if (scanned != 1)
+        return 0;
+
+    while (getchar() != '\n');
+
+    if (symb == 'y')
+        return 1;
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static int open_destination(const int options[], const char* pathname)
+{
     int open_flags = O_WRONLY | O_CREAT;
     if (options[I_option] == 1)
         open_flags |= O_EXCL;
 
-    int dst_fd = open_file(dst, open_flags);
-    if (dst_fd < 0)
+    int res_fd = 0;
+    while ((res_fd = open(pathname, open_flags)) < 0)
     {
-            
+        if (errno == EEXIST)
+        {
+            if (ask_user(pathname))
+            {
+                open_flags &= (~O_EXCL);
+                continue;
+            }
+            else
+                return 0;
+        }
 
-        return -dst_fd;
+        if (options[F_option] == 1)
+        {
+            int unlink_err = unlink(pathname);
+            if (unlink_err)
+            {
+                fprintf(stderr, "unlink() system call failed: %s: %s\n", pathname, 
+                                                                    strerror(errno));
+                return unlink_err;
+            }
+            continue;
+        }
+
+        fprintf(stderr, "open() system call failed: %s: %s\n", pathname, strerror(errno));
+        return -res_fd;
     }
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static int open_destination_dir(const int options[], const char* pathname, const int dir_fd)
+{
+    int open_flags = O_WRONLY | O_CREAT;
+    if (options[I_option] == 1)
+        open_flags |= O_EXCL;
+
+    int res_fd = 0;
+    while ((res_fd = openat(dir_fd, pathname, open_flags)) < 0)
+    {
+        if (errno == EEXIST)
+        {
+            if (ask_user(pathname))
+            {
+                open_flags &= (~O_EXCL);
+                continue;
+            }
+            else
+                return 0;
+        }
+
+        if (options[F_option] == 1)
+        {
+            int unlink_err = unlinkat(dir_fd, pathname, 0);
+            if (unlink_err)
+            {
+                fprintf(stderr, "unlink() system call failed: %s: %s\n", pathname, 
+                                                                    strerror(errno));
+                return unlink_err;
+            }
+            continue;
+        }
+
+        fprintf(stderr, "openat() system call failed: %s: %s\n", pathname, strerror(errno));
+        return -res_fd;
+    }
+
+    return res_fd;
+}
+
+//---------------------------------------------------------
+
+static int cp_file_to_file(const int options[], const char* src, const char* dst)
+{
+
+    printf("\n aa \n");
+
+    assert(options);
+    assert(src);
+    assert(dst);
+
+    int dst_fd = open_destination(options, dst);
+    if (dst_fd == 0)
+        return 0;
+    else if (dst_fd < 0)
+        return -dst_fd;
+
+    fprintf(stderr, "\n %d \n", dst_fd);
+
+    int src_fd = open_file(src, O_RDONLY);
+    if (src_fd < 0)
+        return -src_fd;
 
     int copy_err = copy_file(src_fd, dst_fd);
     if (copy_err)
@@ -123,6 +227,11 @@ static int cp_file_to_file(const int options[], const char* src, const char* dst
     close_err = close_file(dst_fd);
     if (close_err)
         return close_err;
+
+    if (options[V_option] == 1)
+    {
+        printf("'%s' -> '%s'\n", src, dst);
+    }
 
     return 0;
 }
@@ -155,9 +264,11 @@ static int copy_access_rights(const int src_fd, const int dst_fd)
         return -errno;
     }
 
-    int is_changed = fchange_mod(dst_fd, src_stat.st_mode);
-    if (is_changed)
-        return is_changed;
+    int changed_err = fchange_mod(dst_fd, src_stat.st_mode);
+    if (changed_err)
+        return changed_err;
+
+    fprintf(stderr, "%x", (int)src_stat.st_mode);
 
     return 0;
 }
@@ -169,20 +280,23 @@ static int cp_to_dir(const int options[], int optnum, const int argc, const char
     assert(options);
     assert(argv);
 
-    int dir_fd = open_file(argv[argc - 1], O_DIRECTORY);
+    const char* dirname = argv[argc - 1];
+    int dir_fd = open_file(dirname, O_DIRECTORY);
     if (dir_fd < 0)
         return dir_fd;
 
     for (int cur_src = optnum; cur_src < argc - 1; cur_src++)
     {
-        int cur_src_fd = open_file(argv[optnum], O_RDONLY);
-        if (cur_src_fd < 0)
-            return cur_src_fd;
+        int cur_dst_fd = open_destination_dir(options, argv[cur_src], dir_fd);
+        if (cur_dst_fd == 0)
+            continue;
+        else if (cur_dst_fd < 0)
+            return cur_dst_fd;
 
-        int cur_dst_fd = openat(dir_fd, argv[optnum], O_WRONLY | O_CREAT);
-        if (cur_dst_fd < 0)
+        int cur_src_fd = open(argv[cur_src], O_RDONLY);
+        if (cur_src_fd < 0)
         {
-            fprintf(stderr, "openat() system call failed: %s: %s \n", argv[optnum], strerror(errno));
+            fprintf(stderr, "open() system call failed: %s: %s \n", argv[cur_src], strerror(errno));
             return -errno;
         }
 
@@ -197,6 +311,12 @@ static int cp_to_dir(const int options[], int optnum, const int argc, const char
         close_err = close_file(cur_dst_fd);
         if (close_err)
             return close_err;
+
+        if (options[V_option])
+        {
+            printf("'%s' -> '%s/%s'\n", argv[cur_src], dirname, 
+                                        argv[cur_src]);
+        }
     }
 
     int close_dir = close_file(dir_fd);
@@ -229,7 +349,7 @@ static int is_dir(const char* pathname)
 
 //---------------------------------------------------------
 
-static int get_options(const int argc, const char** argv, int options[])
+static int get_options(const int argc, const char** argv, int* options)
 {
     assert(argv);
     assert(options);
@@ -249,9 +369,9 @@ static int get_options(const int argc, const char** argv, int options[])
     {
         switch(opt)
         {
-            case 'i':   [[fallthrough]];
-            case 'f':   [[fallthrough]];
-            case 'v':   [[fallthrough]];
+            case 'i': options[I_option] = 1; break;
+            case 'f': options[F_option] = 1; break;
+            case 'v': options[V_option] = 1; break;
             case 0: 
             {
                 break;
