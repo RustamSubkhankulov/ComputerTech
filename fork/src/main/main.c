@@ -4,5 +4,5 @@
 
 int main (const int argc, const char** argv)
 {
-    return fork_sort(argc, argv);
+    return fork_time(argc, argv);
 }
