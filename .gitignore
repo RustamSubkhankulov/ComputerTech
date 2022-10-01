@@ -1,6 +1,10 @@
-1/obj
-2/obj
-3/obj
-1/print_pids
-2/my_cat
-3/my_cp
+cat/obj
+cp/obj
+id/obj
+echo/obj
+5/obj
+echo/print_pids
+cat/my_cat
+cp/my_cp
+id/my_id
+5/exec
