@@ -1,4 +1,3 @@
-
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -14,17 +13,15 @@
 
 //=========================================================
 
-static const int I_option = 0;
-static const int F_option = 1;
-static const int V_option = 2;
+static const int Option_i = 0;
+static const int Option_f = 1;
+static const int Option_v = 2;
 
 static const int Num_opt  = 3;
 
-static const char* Long_opt_str[] = { "interactive",
-                                      "force",
-                                      "verbose"};
-
-static const char Short_opt_str[] = {'i', 'f', 'v'};
+static const char* Opt_str_names[] = { "interactive",
+                                       "force",
+                                       "verbose"};
 
 //=========================================================
 
@@ -109,51 +106,10 @@ static int ask_user(const char* pathname)
 
 //---------------------------------------------------------
 
-static int open_destination(const int options[], const char* pathname)
-{
-    int open_flags = O_WRONLY | O_CREAT;
-    if (options[I_option] == 1)
-        open_flags |= O_EXCL;
-
-    int res_fd = 0;
-    while ((res_fd = open(pathname, open_flags)) < 0)
-    {
-        if (errno == EEXIST)
-        {
-            if (ask_user(pathname))
-            {
-                open_flags &= (~O_EXCL);
-                continue;
-            }
-            else
-                return 0;
-        }
-
-        if (options[F_option] == 1)
-        {
-            int unlink_err = unlink(pathname);
-            if (unlink_err)
-            {
-                fprintf(stderr, "unlink() system call failed: %s: %s\n", pathname, 
-                                                                    strerror(errno));
-                return unlink_err;
-            }
-            continue;
-        }
-
-        fprintf(stderr, "open() system call failed: %s: %s\n", pathname, strerror(errno));
-        return -res_fd;
-    }
-
-    return 0;
-}
-
-//---------------------------------------------------------
-
 static int open_destination_dir(const int options[], const char* pathname, const int dir_fd)
 {
-    int open_flags = O_WRONLY | O_CREAT;
-    if (options[I_option] == 1)
+    int open_flags = O_WRONLY | O_CREAT | 0700;
+    if (options[Option_i] == 1)
         open_flags |= O_EXCL;
 
     int res_fd = 0;
@@ -170,7 +126,7 @@ static int open_destination_dir(const int options[], const char* pathname, const
                 return 0;
         }
 
-        if (options[F_option] == 1)
+        if (options[Option_f] == 1)
         {
             int unlink_err = unlinkat(dir_fd, pathname, 0);
             if (unlink_err)
@@ -193,20 +149,15 @@ static int open_destination_dir(const int options[], const char* pathname, const
 
 static int cp_file_to_file(const int options[], const char* src, const char* dst)
 {
-
-    printf("\n aa \n");
-
     assert(options);
     assert(src);
     assert(dst);
 
-    int dst_fd = open_destination(options, dst);
+    int dst_fd = open_destination_dir(options, dst, AT_FDCWD);
     if (dst_fd == 0)
         return 0;
     else if (dst_fd < 0)
         return -dst_fd;
-
-    fprintf(stderr, "\n %d \n", dst_fd);
 
     int src_fd = open_file(src, O_RDONLY);
     if (src_fd < 0)
@@ -224,7 +175,7 @@ static int cp_file_to_file(const int options[], const char* src, const char* dst
     if (close_err)
         return close_err;
 
-    if (options[V_option] == 1)
+    if (options[Option_v] == 1)
     {
         printf("'%s' -> '%s'\n", src, dst);
     }
@@ -306,7 +257,7 @@ static int cp_to_dir(const int options[], int optnum, const int argc, const char
         if (close_err)
             return close_err;
 
-        if (options[V_option])
+        if (options[Option_v])
         {
             printf("'%s' -> '%s/%s'\n", argv[cur_src], dirname, 
                                         argv[cur_src]);
@@ -353,19 +304,19 @@ static int get_options(const int argc, const char** argv, int* options)
 
     extern int optind;
 
-    const struct option descr_opt[] = { {"interactive", 0, options + I_option, 1},
-                                        {"force"      , 0, options + F_option, 1},
-                                        {"verbose"    , 0, options + V_option, 1},
-                                        { 0           , 0, 0                 , 0} };
+    const struct option descr_opt[] = { {Opt_str_names[Option_i], 0, options + Option_i, 1},
+                                        {Opt_str_names[Option_f], 0, options + Option_f, 1},
+                                        {Opt_str_names[Option_v], 0, options + Option_v, 1},
+                                        { 0                     , 0, 0                 , 0} };
 
     while ((opt = getopt_long(argc, (char* const*)argv, "ifv",
                               descr_opt, NULL)) != -1)
     {
         switch(opt)
         {
-            case 'i': options[I_option] = 1; break;
-            case 'f': options[F_option] = 1; break;
-            case 'v': options[V_option] = 1; break;
+            case 'i': options[Option_i] = 1; break;
+            case 'f': options[Option_f] = 1; break;
+            case 'v': options[Option_v] = 1; break;
             case 0: 
             {
                 break;
@@ -373,7 +324,7 @@ static int get_options(const int argc, const char** argv, int* options)
 
             default:
             {
-                fprintf(stderr, "\n retyrned opt %c \n", opt);
+                fprintf(stderr, "\n returned opt %c \n", opt);
                 err = -1;
                 return err;
             }

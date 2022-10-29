@@ -95,6 +95,13 @@ int execute_stad(const int argc, const char** argv)
         }
     }
 
+    int err = msgctl(msg_q_id, IPC_RMID, NULL);
+    if (err != 0)
+    {
+        fprintf(stderr, "msgctl() syscall failed: %s \n", strerror(errno));
+        return -errno;
+    }
+
     return 0;
 }
 

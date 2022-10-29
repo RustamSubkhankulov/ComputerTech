@@ -70,6 +70,8 @@ static int is_executable(int dirfd, struct dirent* entry);
 
 int my_ls(const int argc, const char** argv)
 {
+    assert(argv);
+
     int err = 0;
     int options[Num_opt] = { 0 };
 
