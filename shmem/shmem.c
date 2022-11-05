@@ -10,33 +10,49 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <time.h>
+#include <sys/sem.h>
 
 //=========================================================
 
-static const unsigned Process_num = 10;
-static const unsigned Incr_num    = 1000000;
+struct sembuf Sem_v = {.sem_num = 0, .sem_op = +1, .sem_flg = 0};
+
+struct sembuf Sem_p = {.sem_num = 0, .sem_op = -1, .sem_flg = 0};
 
 //=========================================================
 
-static int child(int* value, unsigned incr_num);
+static const unsigned Process_num = 20;
+static const unsigned Incr_num    = 500000;
 
 //=========================================================
 
-static int child(int* value, unsigned incr_num)
+static int child(int sem_id, int* value, unsigned incr_num);
+
+//=========================================================
+
+static int child(int sem_id, int* value, unsigned incr_num)
 {
     assert(value);
 
+    int local_val = 0;
+
     for (unsigned j = 0; j < incr_num; j++)
     {
-        *value += 1;
+        local_val += 1;
     }
 
-    int err = shmdt(value);
-    if (err == -1)
+    struct sembuf op = Sem_p;
+    op.sem_flg |= SEM_UNDO;
+
+    int err = semop(sem_id, &op, 1);
+    if (err != 0)
     {
-        fprintf(stderr, "shmdt() syscall failed: %s \n", strerror(errno));
+        fprintf(stderr, "semop() syscall failed: %s \n", strerror(errno));
         return -errno;
     }
+
+    *value += local_val;
+
+    // There is no point of detaching shared memory in child process
 
     return 0;
 }
@@ -59,6 +75,20 @@ int main()
         return -errno;
     }
 
+    int sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | IPC_EXCL | 0700);
+    if (sem_id == -1)
+    {
+        fprintf(stderr, "semget() syscall failed: %s \n", strerror(errno));
+        return -errno;
+    }
+
+    int err = semop(sem_id, &Sem_v, 1);
+    if (err != 0)
+    {
+        fprintf(stderr, "semop() syscall failed: %s \n", strerror(errno));
+        return -errno;
+    }
+
     *value = 0;
     pid_t pid = 0;
 
@@ -75,12 +105,7 @@ int main()
         pid = fork();
         if (pid == 0)
         {
-            for (unsigned j = 0; j < Incr_num; j++)
-            {
-                *value += 1;
-            }
-
-            return 0;
+            return child(sem_id, value, Incr_num);
         }
         else
             continue;
@@ -120,7 +145,14 @@ int main()
     putchar('\n');
     printf("Total value: %d \n", *value);
 
-    int err = shmdt(value);
+    err = semctl(sem_id, 1, IPC_RMID);
+    if (err == -1)
+    {
+        fprintf(stderr, "semctl() syscall failed: %s \n", strerror(errno));
+        return -errno;
+    }
+
+    err = shmdt(value);
     if (err == -1)
     {
         fprintf(stderr, "shmdt() syscall failed: %s \n", strerror(errno));
