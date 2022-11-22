@@ -14,6 +14,8 @@
 
 static int execute_pipeline(const Cmnds* cmnds);
 
+static void write_promt();
+
 //=========================================================
 
 enum Exec_pipe_ret_val
@@ -30,6 +32,8 @@ int my_shell(const int argc, const char** argv)
 
     while(1)
     {
+        write_promt();
+
         struct Cmnds cmnds = {0};
         
         int err = cmnds_ctor(&cmnds);
@@ -65,6 +69,14 @@ int my_shell(const int argc, const char** argv)
     }
 
     return 0;
+}
+
+//---------------------------------------------------------
+
+static void write_promt()
+{
+    printf(">");
+    fflush(stdout);
 }
 
 //---------------------------------------------------------
