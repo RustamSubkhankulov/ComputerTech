@@ -4,4 +4,4 @@ shmem: shmem.c
 	$(CC) $(^) -o $(@)
 
 pizza: pizza.c
-	$(CC) $(^) -o $(@)
+	$(CC) $(^) -o $(@) -g

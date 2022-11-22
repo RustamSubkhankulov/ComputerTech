@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <sys/sem.h>
+#include <stdbool.h>
 
 //=========================================================
 
@@ -28,7 +29,7 @@
 
 //=========================================================
 
-struct Cook_convey_sem
+struct Cook_convey
 {
     int sem_id;
 
@@ -36,6 +37,8 @@ struct Cook_convey_sem
     unsigned sem_ingredient_num;
 
     unsigned sem_convey;
+
+    unsigned next_convey_sem_access;
 
     char ingr;
 };
@@ -55,14 +58,14 @@ static int cook_ingredients(int sem_id, char* ingredients, unsigned* ingredient_
 
 static int client          (int sem_id, char* ready);
 
-static int cook_convey     (const struct Cook_convey_sem* cook_convey_sem, 
-                            unsigned len, unsigned count, char* storage, char* workplace);
+static int cook_convey     (const struct Cook_convey* Cook_convey, 
+                            unsigned len, unsigned count, char* storage, char* workplace, bool* wake_up_next);
 
-static int chief           (int sem_id, char** convey, char* ready, char* empty);
+static int chief           (int sem_id, char** convey, char* ready, char* empty, bool** wake_up_next_arr);
 
 //=========================================================
 
-static const unsigned Pizza_num = 1;
+static const unsigned Pizza_num = 10;
 
 static const unsigned Ingredient_low  = 5;
 static const unsigned Ingredient_high = 10;
@@ -80,7 +83,7 @@ static const unsigned A_convey_len = 5;
 
 // semaphores
 
-static const unsigned Sem_num = 14;
+static const unsigned Sem_num = 16;
 
 static const unsigned P_ingredient_access = 0;
 static const unsigned I_ingredient_access = 1;
@@ -92,14 +95,17 @@ static const unsigned I_ingredient_num = 5;
 static const unsigned Z_ingredient_num = 6;
 static const unsigned A_ingredient_num = 7;
 
-static const unsigned P_convey_sem = 8;
-static const unsigned I_convey_sem = 9;
-static const unsigned Z_convey_sem = 10;
-static const unsigned A_convey_sem = 11;
+static const unsigned P_convey_sem  = 8;
+static const unsigned I_convey_sem  = 9;
+static const unsigned Z_convey_sem  = 10;
+static const unsigned A_convey_sem  = 11; 
 
-static const unsigned Ready_sem    = 12;
+static const unsigned Ready_sem     = 12;
 
 static const unsigned Terminate_sem = 13;
+
+static const unsigned Client_sem    = 14;
+static const unsigned Chief_sem     = 15;
 
 //=========================================================
 
@@ -107,7 +113,7 @@ int main()
 {
     // prepare all for work
 
-    size_t size = sizeof(char) * (4 * Ingredient_high + 6 * strlen("pizza"));
+    size_t size = sizeof(char) * (4 * Ingredient_high + 6 * strlen("pizza") + 5 * sizeof(char) + 4 * sizeof(bool));
 
     int shm_id = shmget(IPC_PRIVATE, size, IPC_CREAT | IPC_EXCL | 0700);
     void* addr = shmat(shm_id, NULL, 0);
@@ -125,10 +131,10 @@ int main()
     char     ingredients      [] = {'p'  , 'i'  , 'z'  , 'a'};
     unsigned ingredients_count[] = {1, 1, 2, 1};
 
-    unsigned ingredient_sems_access[] = {P_ingredient_access, 
-                                         I_ingredient_access, 
-                                         Z_ingredient_access, 
-                                         A_ingredient_access};
+    int ingredient_sems_access[] = {P_ingredient_access, 
+                                    I_ingredient_access, 
+                                    Z_ingredient_access, 
+                                    A_ingredient_access};
 
     unsigned ingredient_sems_num[] = {P_ingredient_num, 
                                       I_ingredient_num, 
@@ -139,17 +145,28 @@ int main()
     unsigned convey_sem_nums[] = {P_convey_sem, 
                                   I_convey_sem, 
                                   Z_convey_sem, 
-                                  A_convey_sem};
+                                  A_convey_sem,
+                                  Chief_sem};
 
     unsigned convey_lens[] = {P_convey_len,
                               I_convey_len,
                               Z_convey_len,
                               A_convey_len};
 
-    char* cook_storage[] = {((char*) addr + Product_len * 6),
-                            ((char*) addr + Product_len * 6 + Ingredient_high),
-                            ((char*) addr + Product_len * 6 + Ingredient_high * 2),
-                            ((char*) addr + Product_len * 6 + Ingredient_high * 3)};
+    char* cook_storage[] = {((char*) addr + Product_len * 6 + 1),
+                            ((char*) addr + Product_len * 6 + Ingredient_high + 2),
+                            ((char*) addr + Product_len * 6 + Ingredient_high * 2 + 3),
+                            ((char*) addr + Product_len * 6 + Ingredient_high * 3 + 4)};
+
+    bool* wake_up_next_arr_addr = (bool*)((char*) addr + Product_len * 6 + Ingredient_high * 4 + 5);
+    bool* wake_up_next[] = {wake_up_next_arr_addr,
+                            wake_up_next_arr_addr + sizeof(bool),
+                            wake_up_next_arr_addr + sizeof(bool) * 2,
+                            wake_up_next_arr_addr + sizeof(bool) * 3 };
+    for (unsigned iter = 0; iter < sizeof(wake_up_next) / sizeof(bool*); iter++)
+    {
+        *(wake_up_next[iter]) = true;
+    }
 
     int sem_id = semget(IPC_PRIVATE, Sem_num, IPC_CREAT | IPC_EXCL | 0700);
     if (sem_id == -1) 
@@ -167,9 +184,10 @@ int main()
                                {.sem_num = Z_ingredient_access, .sem_op = +1, .sem_flg = 0},
                                {.sem_num = A_ingredient_access, .sem_op = +1, .sem_flg = 0},
                                {.sem_num = P_convey_sem,        .sem_op = +1, .sem_flg = 0},
-                               {.sem_num = I_convey_sem,        .sem_op = +1, .sem_flg = 0},
-                               {.sem_num = Z_convey_sem,        .sem_op = +1, .sem_flg = 0},
-                               {.sem_num = A_convey_sem,        .sem_op = +1, .sem_flg = 0}};
+                            //    {.sem_num = I_convey_sem,        .sem_op = +1, .sem_flg = 0},
+                            //    {.sem_num = Z_convey_sem,        .sem_op = +1, .sem_flg = 0},
+                            //    {.sem_num = A_convey_sem,        .sem_op = +1, .sem_flg = 0}};
+                               {.sem_num = Ready_sem,           .sem_op = +1, .sem_flg = 0}};
 
     int err = semop(sem_id, initial, sizeof(initial) / sizeof(struct sembuf));
     if (err != 0)
@@ -186,12 +204,13 @@ int main()
 
         if (pid == 0)
         {
-            struct Cook_convey_sem cur = {.sem_id = sem_id, .sem_ingredient_access = ingredient_sems_access[iter],
-                                                            .sem_ingredient_num    = ingredient_sems_num   [iter], 
-                                                            .sem_convey            = convey_sem_nums       [iter],
-                                                            .ingr                  = ingredients           [iter]};
+            struct Cook_convey cur = {.sem_id = sem_id, .sem_ingredient_access      = ingredient_sems_access[iter],
+                                                            .sem_ingredient_num     = ingredient_sems_num   [iter], 
+                                                            .sem_convey             = convey_sem_nums       [iter],
+                                                            .ingr                   = ingredients           [iter],
+                                                            .next_convey_sem_access = convey_sem_nums       [iter + 1]};
 
-            return cook_convey(&cur, convey_lens[iter], ingredients_count[iter], cook_storage[iter], convey[iter]);
+            return cook_convey(&cur, convey_lens[iter], ingredients_count[iter], cook_storage[iter], convey[iter], wake_up_next[iter]);
         }
         else if (pid == -1)
         {
@@ -215,7 +234,7 @@ int main()
     pid = fork();
     if (pid == 0)
     {
-        return chief(sem_id, convey, ready, empty);
+        return chief(sem_id, convey, ready, empty, wake_up_next);
     }
     else if (pid == -1)
     {
@@ -354,6 +373,8 @@ static int cook_ingredients(int sem_id, char* ingredients, unsigned* ingredient_
 
     while (1)
     {
+        fprintf(stderr, "INGR: iteration \n");
+
         int term = 0;
         if ((term = check_terminate(sem_id)) == 1)
         {
@@ -388,25 +409,28 @@ static int cook_ingredients(int sem_id, char* ingredients, unsigned* ingredient_
 
                 int cooked = 0;
                 char ingredient = ingredients[iter];
+                char src[2] = {ingredient, '\0'};
 
-                while(ingredient_amount <= Ingredient_high)
+                while(ingredient_amount + cooked < Ingredient_high)
                 {
-                    strcat(storage[iter], &ingredient);
+                    strcat(storage[iter], src);
                     cooked++;
                 }
 
                 fprintf(stderr, "INGR: Cooked %d '%c'ingredients \n", cooked, ingredient);
                 fprintf(stderr, "INGR: Ingredients string after cooking: |%s| \n", storage[iter]);
 
-                err = sem_oper(sem_id, ingredient_sems_num[iter], cooked, 0);
+                struct sembuf oper = {.sem_num = ingredient_sems_num[iter], .sem_op = cooked, .sem_flg = 0};
+                err = semop(sem_id, &oper, 1);
                 if (err != 0)
                 {
+                    ERR(fprintf(stderr, "semop() syscall failed: %s \n", strerror(errno)));
                     fprintf(stderr, "INGR: Ingredients cook terminated with error \n");
-                    return err;
+                    return -errno;
                 }
             }
 
-            err = sem_v(sem_id, ingredient_sems_num[iter]);
+            err = sem_v(sem_id, ingredient_sems_access[iter]);
             if (err != 0)
             {
                 fprintf(stderr, "INGR: Ingredients cook terminated with error \n");
@@ -414,6 +438,7 @@ static int cook_ingredients(int sem_id, char* ingredients, unsigned* ingredient_
             }
         }
         
+        usleep(100);
     }
 
     return 0;
@@ -431,16 +456,27 @@ static int client(int sem_id, char* ready)
 
     while (pizza_count < Pizza_num)
     {
-        fprintf(stderr, "CLNT: Cur pizza count: %d \n", pizza_count);
+        fprintf(stderr, "CLNT: iteration \n");
 
-        int err = sem_p(sem_id, Ready_sem);
+        int err = sem_p(sem_id, Client_sem);
         if (err != 0)
         {
             fprintf(stderr, "CLNT: Client terminated with error \n");
             return err;
         }
 
-        fprintf(stderr, "CLNT: Client checks ready pizza: %s \n", ready);
+        fprintf(stderr, "CLNT: Chief told client that pizza is ready \n");
+
+        fprintf(stderr, "CLNT: Cur pizza count: %d \n", pizza_count);
+
+        err = sem_p(sem_id, Ready_sem);
+        if (err != 0)
+        {
+            fprintf(stderr, "CLNT: Client terminated with error \n");
+            return err;
+        }
+
+        fprintf(stderr, "CLNT: Client checks ready pizza: |%s| \n", ready);
 
         if (strcmp(ready, "pizza") == 0)
         {
@@ -449,10 +485,8 @@ static int client(int sem_id, char* ready)
             pizza_count++;
             *ready = '\0';
 
-            fprintf(stderr, "CLNT: Ready pizza now is %s \n", ready);
+            fprintf(stderr, "CLNT: Ready pizza now is |%s| \n", ready);
         }
-
-        ready = "\0";
 
         err = sem_v(sem_id, Ready_sem);
         if (err != 0)
@@ -468,57 +502,49 @@ static int client(int sem_id, char* ready)
 
 //---------------------------------------------------------
 
-static int cook_convey(const struct Cook_convey_sem* cook_convey_sem, 
-                       unsigned len, unsigned count, char* storage, char* workplace)
+static int cook_convey(const struct Cook_convey* Cook_convey, 
+                       unsigned len, unsigned count, char* storage, char* workplace, bool* wake_up_next)
 {
-    assert(cook_convey_sem);
+    assert(Cook_convey);
     assert(storage);
     assert(workplace);
+    assert(wake_up_next);
    
-    char ingredient = cook_convey_sem->ingr;
+    char ingredient = Cook_convey->ingr;
 
     fprintf(stderr, "CNVY: (%c) Convey cook started \n", ingredient);
 
     while (1)
     {
-        int term = 0;
-        if ((term = check_terminate(cook_convey_sem->sem_id)) == 1)
-        {
-            fprintf(stderr, "CNVY: (%c) Convey cook terminated normally \n", ingredient);
-            return 0;
-        }
-        else if (term != 0)
-        {
-            fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
-            return term;
-        }
+        // fprintf(stderr, "CNVY: (%c) iteration \n", ingredient);
 
-        int err = sem_p(cook_convey_sem->sem_id, cook_convey_sem->sem_convey);
+        int err = sem_p(Cook_convey->sem_id, Cook_convey->sem_convey);
         if (err != 0)
         {
             fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
             return err;
         }
-        
+
         size_t workplace_len = strlen(workplace);
 
-        if (workplace_len != len - count)
+        if ((workplace_len == 0 && ingredient != 'p') 
+         || (workplace_len != 0 && workplace[workplace_len - 1] == ingredient))
         {
-            // fprintf(stderr, "CNVY: (%c) No need to cook, skips \n", ingredient);
+            fprintf(stderr, "CNVY: (%c) Len is %lu Last sym is %c; No need to cook, skips \n", ingredient, workplace_len, (workplace_len)? workplace[workplace_len - 1] : 'f');            
             goto free_workplace;
         }
 
         fprintf(stderr, "CNVY: (%c) Workplace: |%s| \n", ingredient, workplace);
         fprintf(stderr, "CNVY: (%c) Need to add ingredients \n", ingredient);
 
-        err = sem_p(cook_convey_sem->sem_id, cook_convey_sem->sem_ingredient_access);
+        err = sem_p(Cook_convey->sem_id, Cook_convey->sem_ingredient_access);
         if (err != 0)
         {
             fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
             return err;
         }
 
-        struct sembuf operation = {.sem_num = cook_convey_sem->sem_ingredient_num, 
+        struct sembuf operation = {.sem_num = Cook_convey->sem_ingredient_num, 
                                    .sem_op  = -count, 
                                    .sem_flg = IPC_NOWAIT};
 
@@ -526,21 +552,24 @@ static int cook_convey(const struct Cook_convey_sem* cook_convey_sem,
         
         while(1)
         {
-            result = semop(cook_convey_sem->sem_id, &operation, 1);
+            fprintf(stderr, "CNVY: (%c) try and lock num of ingredients \n", ingredient);
+
+            result = semop(Cook_convey->sem_id, &operation, 1);
             if (result == 0 || (result != 0 && errno != EAGAIN))
                 break;
 
-            err = sem_v(cook_convey_sem->sem_id, cook_convey_sem->sem_ingredient_access);
+            fprintf(stderr, "CNVY: (%c) Not enough ingredients, wait for ingredients cook (sleep)\n", ingredient);
+
+            err = sem_v(Cook_convey->sem_id, Cook_convey->sem_ingredient_access);
             if (err != 0)
             {
                 fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
                 return err;
             }
 
-            fprintf(stderr, "CNVY: (%c) Not enough ingredients, wait for ingredients cook (sleep)\n", ingredient);
             usleep(50);
 
-            err = sem_p(cook_convey_sem->sem_id, cook_convey_sem->sem_ingredient_access);
+            err = sem_p(Cook_convey->sem_id, Cook_convey->sem_ingredient_access);
             if (err != 0)
             {
                 fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
@@ -555,6 +584,8 @@ static int cook_convey(const struct Cook_convey_sem* cook_convey_sem,
             return -errno;
         }
 
+            fprintf(stderr, "CNVY: (%c) Enough ingredients in storage \n", ingredient);
+
         fprintf(stderr, "CNVY: (%c) Took ingredients from storage \n", ingredient);
         fprintf(stderr, "CNVY: (%c) before: storage |%s| workplace |%s| \n", ingredient, storage, workplace);
 
@@ -568,14 +599,48 @@ static int cook_convey(const struct Cook_convey_sem* cook_convey_sem,
 
         fprintf(stderr, "CNVY: (%c) after: storage |%s| workplace |%s| \n", ingredient, storage, workplace);
 
-        free_workplace:
+        err = sem_v(Cook_convey->sem_id, Cook_convey->sem_ingredient_access);
+        if (err != 0)
+        {
+            fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
+            return err;
+        }
 
-            err = sem_v(cook_convey_sem->sem_id, cook_convey_sem->sem_convey);
+    free_workplace:
+
+        if (*wake_up_next == true)
+        {
+            err = sem_v(Cook_convey->sem_id, Cook_convey->next_convey_sem_access);
             if (err != 0)
             {
                 fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
                 return err;
             }
+
+            fprintf(stderr, "CNVY: (%c) Convey cook woke up next \n", ingredient);
+            *wake_up_next = false;
+        }
+
+        err = sem_v(Cook_convey->sem_id, Cook_convey->sem_convey);
+        if (err != 0)
+        {
+            fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
+            return err;
+        }
+
+        int term = 0;
+        if ((term = check_terminate(Cook_convey->sem_id)) == 1)
+        {
+            fprintf(stderr, "CNVY: (%c) Convey cook terminated normally \n", ingredient);
+            return 0;
+        }
+        else if (term != 0)
+        {
+            fprintf(stderr, "CNVY: (%c) Convey cook terminated with error \n", ingredient);
+            return term;
+        }
+
+        usleep(100);
     }
 
     return 0;
@@ -583,16 +648,26 @@ static int cook_convey(const struct Cook_convey_sem* cook_convey_sem,
 
 //---------------------------------------------------------
 
-static int chief(int sem_id, char** convey, char* ready, char* empty)
+static int chief(int sem_id, char** convey, char* ready, char* empty, bool** wake_up_next_arr)
 {
     assert(convey);
     assert(ready);
     assert(empty);
+    assert(wake_up_next_arr);
 
     fprintf(stderr, "CHIF: Chief started \n");
 
     while (1)
     {
+        fprintf(stderr, "CHIF: iteration \n");
+
+        int err = sem_p(sem_id, Chief_sem);
+        if (err != 0)
+        {
+            fprintf(stderr, "CHIF: Chief terminated with error \n");
+            return err;
+        }
+
         int term = 0;
         if ((term = check_terminate(sem_id)) == 1)
         {
@@ -608,8 +683,10 @@ static int chief(int sem_id, char** convey, char* ready, char* empty)
         struct sembuf ops[] = {{.sem_num = P_convey_sem, .sem_op = -1, .sem_flg = 0},
                                {.sem_num = I_convey_sem, .sem_op = -1, .sem_flg = 0},
                                {.sem_num = Z_convey_sem, .sem_op = -1, .sem_flg = 0},
-                               {.sem_num = A_convey_sem, .sem_op = -1, .sem_flg = 0}};
-        int err = semop(sem_id, ops, Ingredients_num);
+                               {.sem_num = A_convey_sem, .sem_op = -1, .sem_flg = 0},
+                               {.sem_num = Ready_sem,    .sem_op = -1, .sem_flg = 0}};
+
+        err = semop(sem_id, ops, sizeof(ops) / sizeof(struct sembuf));
         if (err != 0)
         {
             ERR(fprintf(stderr, "semop() syscall failed: %s \n", strerror(errno)));
@@ -626,19 +703,25 @@ static int chief(int sem_id, char** convey, char* ready, char* empty)
         fprintf(stderr, "CHIF: A_convey |%s| \n", convey[3]);
         fprintf(stderr, "CHIF: Ready    |%s| \n", ready);
 
-        if (strlen(convey[0]) != P_convey_len 
-         || strlen(convey[1]) != I_convey_len 
-         || strlen(convey[2]) != Z_convey_len
-         || strlen(convey[3]) != A_convey_len)
+        if (((strlen(convey[0]) != P_convey_len)
+          && (strlen(convey[1]) != I_convey_len || strlen(convey[1]) != 0) 
+          && (strlen(convey[2]) != Z_convey_len || strlen(convey[2]) != 0)
+          && (strlen(convey[3]) != A_convey_len || strlen(convey[3]) != 0))
+           || strlen(ready) != 0)
         {
             fprintf(stderr, "CHIF: Convey is not ready, skips \n");
-            goto free_sems;
-        }
+            
+            for (unsigned iter = 0; iter < sizeof(ops) / sizeof(struct sembuf); iter++)
+            {
+                ops[iter].sem_op = +1;
+            }
 
-        if (strlen(ready) != 0)
-        {
-            fprintf(stderr, "CHIF: Ready is not zero string, skips \n");
-            goto free_sems;
+            err = semop(sem_id, ops, sizeof(ops) / sizeof(struct sembuf));
+            if (err != 0)
+            {
+                fprintf(stderr, "CHIF: Chief terminated with error \n");
+                return err;
+            }
         }
 
         // move convey
@@ -677,19 +760,33 @@ static int chief(int sem_id, char** convey, char* ready, char* empty)
         fprintf(stderr, "CHIF: A_convey |%s| \n", convey[3]);
         fprintf(stderr, "CHIF: Ready    |%s| \n", ready);
 
-        free_sems:
+        for (unsigned iter = 0; iter < Ingredients_num; iter++)
+        {
+            *(wake_up_next_arr[iter]) = true;
+        }
 
-            for (unsigned iter = 0; iter < Ingredients_num; iter++)
-            {
-                ops[iter].sem_op = +1;
-            }
+        if (strlen(ready) != 0)
+        {
+            fprintf(stderr, "CHIF: Chief tells client that pizza is ready \n");
 
-            err = semop(sem_id, ops, Ingredients_num);
+            err = sem_v(sem_id, Client_sem);
             if (err != 0)
             {
                 fprintf(stderr, "CHIF: Chief terminated with error \n");
                 return err;
             }
+        }
+
+        struct sembuf ops_free[] = {{.sem_num = P_convey_sem, .sem_op = 1, .sem_flg = 0},
+                                    {.sem_num = Ready_sem,    .sem_op = 1, .sem_flg = 0}};
+                                    
+        err = semop(sem_id, ops_free, sizeof(ops_free) / sizeof(struct sembuf));
+        if (err != 0)
+        {
+            ERR(fprintf(stderr, "semop() syscall failed: %s \n", strerror(errno)));
+            fprintf(stderr, "CHIF: Chief terminated with error \n");
+            return -errno;
+        }    
     }
 
     return 0;
