@@ -1,3 +1,5 @@
+all: pizza
+
 shmem: shmem.c
 	$(CC) $(^) -o $(@)
 

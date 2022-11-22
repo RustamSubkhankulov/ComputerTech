@@ -1,0 +1,15 @@
+CNVY: (p) Convey cook started 
+CNVY: (p) Workplace: || 
+CNVY: (p) Need to add ingredients 
+CNVY: (p) Not enough ingredients, wait for ingredients cook (sleep)
+CNVY: (i) Convey cook started 
+CNVY: (z) Convey cook started 
+CNVY: (a) Convey cook started 
+INGR: Ingredients cook started 
+INGR: Ingredients cook took access for 'p' 
+INGR: Current amount of 'p' is 0 
+INGR: Ingredients string: || 
+INGR: Not enough of 'p'. Started cooking ingredients 
+CHIF: Chief started 
+CLNT: Client started 
+CLNT: Cur pizza count: 0 
