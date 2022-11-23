@@ -16,3 +16,4 @@ msgq/obj
 msgq/stad
 shmem/shmem
 shmem/obj
+monitor/exec_cat

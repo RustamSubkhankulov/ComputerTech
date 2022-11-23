@@ -116,7 +116,18 @@ int main()
     size_t size = sizeof(char) * (4 * Ingredient_high + 6 * strlen("pizza") + 5 * sizeof(char) + 4 * sizeof(bool));
 
     int shm_id = shmget(IPC_PRIVATE, size, IPC_CREAT | IPC_EXCL | 0700);
+    if (shm_id == -1)
+    {
+        fprintf(stderr, "shmget() syscall failed: %s \n", strerror(errno));
+        return -errno;
+    }
+    
     void* addr = shmat(shm_id, NULL, 0);
+    if (addr == (void*)(-1))
+    {
+        fprintf(stderr, "shmat() syscall failed: %s \n", strerror(errno));
+        return -errno;
+    }
 
     memset(addr, 0, size);
 
