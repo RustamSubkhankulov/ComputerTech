@@ -1,4 +1,4 @@
-
+#include <assert.h>
 
 //---------------------------------------------------------
 
@@ -13,6 +13,10 @@ static int monitor_checker(const struct Monitor* monitor)
     return MONITOR_OK;    
 }
 
+static int monitor_init(struct Monitor* monitor);
+
+static int monitor_deinit(struct Monitor* monitor);
+
 //=========================================================
 
 int monitor_ctor(struct Monitor* monitor)
@@ -24,6 +28,28 @@ int monitor_ctor(struct Monitor* monitor)
     err = rbuffer_ctor(&(monitor->rbuffer));
     if (err != RBUFFER_OK)
         return err;
+
+    err = monitor_init(monitor);
+    if (err != MONITOR_OK)
+        return err;
+
+    return MONITOR_OK;
+}
+
+//---------------------------------------------------------
+
+static int monitor_init(struct Monitor* monitor)
+{
+    assert(monitor);
+
+    return MONITOR_OK;
+}
+
+//---------------------------------------------------------
+
+static int monitor_deinit(struct Monitor* monitor)
+{
+    assert(monitor);
 
     return MONITOR_OK;
 }

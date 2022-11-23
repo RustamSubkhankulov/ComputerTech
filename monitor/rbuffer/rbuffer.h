@@ -8,7 +8,7 @@
 
 // conf
 
-const static Rbuffer_memory_size = 4096 * 16;
+const static unsigned Rbuffer_memory_size = 4096 * 16;
 
 //=========================================================
 
