@@ -7,7 +7,7 @@ FLAGS = -g
 ##-----------------------------------------------
 
 exec_cat: obj/monitor.o obj/cat.o obj/main.o obj/rbuffer.o
-	$(CC) $(^) -o $(@) $(FLAGS)
+	$(CC) $(^) -o $(@) $(FLAGS) -lpthread
 
 ##-----------------------------------------------
 

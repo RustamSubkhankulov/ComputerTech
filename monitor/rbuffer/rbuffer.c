@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 //---------------------------------------------------------
 
@@ -56,7 +57,7 @@ int rbuffer_ctor(struct Rbuffer* rbuffer)
     char* memory = (char*) calloc(Rbuffer_memory_size, sizeof(char));
     if (memory == NULL)
     {
-        fprintf(stderr, "calloc() call failed - failed to allocate rbuffer memory - %s \n", strerror(errno));
+        ERR(fprintf(stderr, "calloc() call failed - failed to allocate rbuffer memory - %s \n", strerror(errno)));
         return -errno;
     }
 
@@ -102,38 +103,62 @@ int rbuffer_read(struct Rbuffer* rbuffer, size_t size, void* addr)
     assert(addr);
 
     int err = 0;
+    int read = 0;
 
     if ((err = rbuffer_checker(rbuffer)) != RBUFFER_OK)
         return err;
 
     for (size_t iter = 0; iter < size; iter++)
     {
-        if ((err = rbuffer_read_char(rbuffer, (char*) addr + iter)) != 0)
-            return err;
+        err = rbuffer_read_char(rbuffer, (char*) addr + iter);
+
+        if (err == 0)
+        {
+            read++;
+        }
+        else
+        {
+            if (read <= 0)
+                return err;
+            else 
+                return read;
+        }
     }
 
-    return RBUFFER_OK;
+    return read;
 }
 
 //---------------------------------------------------------
 
-int rbuffer_write(struct Rbuffer* rbuffer, size_t size, void* addr)
+int rbuffer_write(struct Rbuffer* rbuffer, size_t size, const void* addr)
 {
     assert(rbuffer);
     assert(addr);
 
     int err = 0;
+    int written = 0;
     
     if ((err = rbuffer_checker(rbuffer)) != RBUFFER_OK)
         return err;
 
     for (size_t iter = 0; iter < size; iter++)
     {
-        if ((err = rbuffer_write_char(rbuffer, (char*) addr + iter)) != 0)
-            return err;
+        err = rbuffer_write_char(rbuffer, (char*) addr + iter);
+
+        if (err == 0)
+        {
+            written++;
+        }
+        else
+        {
+            if (written <= 0)
+                return err;
+            else 
+                return written;
+        }
     }
 
-    return RBUFFER_OK;
+    return written;
 }
 
 //---------------------------------------------------------
@@ -162,7 +187,7 @@ int rbuffer_read_char(struct Rbuffer* rbuffer, void* addr)
 
 //---------------------------------------------------------
 
-int rbuffer_write_char(struct Rbuffer* rbuffer, void* addr)
+int rbuffer_write_char(struct Rbuffer* rbuffer, const void* addr)
 {
     assert(rbuffer);
     assert(addr);
