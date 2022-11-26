@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 //---------------------------------------------------------
 
@@ -15,6 +16,10 @@
 static int execute_pipeline(const Cmnds* cmnds);
 
 static void write_promt();
+
+static int set_sig_handler();
+
+static void sigint_handler(int signo);
 
 //=========================================================
 
@@ -30,13 +35,17 @@ int my_shell(const int argc, const char** argv)
 {
     assert(argv);
 
+    int err = set_sig_handler();
+    if (err != 0)
+        return err;
+
     while(1)
     {
         write_promt();
 
         struct Cmnds cmnds = {0};
         
-        int err = cmnds_ctor(&cmnds);
+        err = cmnds_ctor(&cmnds);
         if (err < 0)
         {
             fprintf(stderr, "cmnds_ctor() failed \n");
@@ -69,6 +78,28 @@ int my_shell(const int argc, const char** argv)
     }
 
     return 0;
+}
+
+//---------------------------------------------------------
+
+static int set_sig_handler()
+{
+    sighandler_t old = signal(SIGINT, sigint_handler);
+    if (old == SIG_ERR)
+    {
+        fprintf(stderr, "signal() failed: %s \n", strerror(errno));
+        return -errno;
+    }
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static void sigint_handler(int signo)
+{
+    printf("\n" "My final message. Goodb ye \n");
+    exit(0);
 }
 
 //---------------------------------------------------------
