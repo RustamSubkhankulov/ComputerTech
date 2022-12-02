@@ -25,9 +25,7 @@ static int sigsend_rcv_end_rt(void);
 int sigsend_snd_start(void)
 {
     #ifdef RT_SIGS
-
         return sigsend_snd_start_rt();
-
     #endif 
 
     return 0;
@@ -38,9 +36,7 @@ int sigsend_snd_start(void)
 int sigsend_rcv_start(void)
 {
     #ifdef RT_SIGS
-
         return sigsend_rcv_start_rt();
-
     #endif 
 
     return 0;
@@ -51,9 +47,7 @@ int sigsend_rcv_start(void)
 int sigsend_snd(char val)
 {
     #ifdef RT_SIGS
-
         return sigsend_snd_rt(val);
-
     #endif 
 
     return 0;
@@ -64,9 +58,7 @@ int sigsend_snd(char val)
 int sigsend_rcv(char* val_ptr)
 {
     #ifdef RT_SIGS
-
         return sigsend_rcv_rt(val_ptr);
-
     #endif 
 
     return 0;
@@ -77,9 +69,7 @@ int sigsend_rcv(char* val_ptr)
 int sigsend_snd_end(void)
 {
     #ifdef RT_SIGS
-
         return sigsend_snd_end_rt();
-
     #endif 
 
     return 0;
@@ -90,9 +80,7 @@ int sigsend_snd_end(void)
 int sigsend_rcv_end(void)
 {
     #ifdef RT_SIGS
-
         return sigsend_rcv_end_rt();
-
     #endif 
 
     return 0;
