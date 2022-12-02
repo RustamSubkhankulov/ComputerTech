@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "monitor.h": "c",
-        "ipc.h": "c"
+        "ipc.h": "c",
+        "config.h": "c"
     }
 }
