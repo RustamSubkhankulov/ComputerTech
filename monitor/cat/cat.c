@@ -224,13 +224,12 @@ static void* cat_read (void* arg)
     assert(arg);
 
     struct Cat_read_args* args = (struct Cat_read_args*) arg;
-    // fprintf(stderr, "READ: started \n");
 
     int err = 0;
 
     if (args->argc == 1)
     {
-        err = read_to_rbuffer(0, args->monitor); // stdin
+        err = read_to_rbuffer(0, args->monitor);
         if (err != 0)
             return (void*) (unsigned long) err;
     }

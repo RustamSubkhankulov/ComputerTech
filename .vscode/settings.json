@@ -3,6 +3,9 @@
         "monitor.h": "c",
         "ipc.h": "c",
         "config.h": "c",
-        "poll.h": "c"
-    }
+        "poll.h": "c",
+        "signal.h": "c",
+        "types.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
