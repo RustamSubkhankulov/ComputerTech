@@ -14,6 +14,25 @@
 
 //=========================================================
 
+// #define DEBUG
+
+#ifdef DEBUG
+
+    #define DBG(...)                                        \
+                                                            \
+    do                                                      \
+    {                                                       \
+    __VA_ARGS__;                                            \
+    } while(0);
+
+#else 
+
+    #define DBG(...) 
+
+#endif 
+
+//=========================================================
+
 #define ERR(action)                                         \
                                                             \
     do                                                      \
@@ -47,8 +66,8 @@ static int restore_procmask();
 
 //---------------------------------------------------------
 
-static int snd_val(pid_t pid, char val);
-static int rcv_val(pid_t pid, char* val);
+static int snd_val(pid_t pid, unsigned char val);
+static int rcv_val(pid_t pid, unsigned char* val);
 
 static int snd_stop(pid_t pid);
 
@@ -103,10 +122,12 @@ int cat(const int argc, const char** argv)
     if (err != 0)
         return err;
 
-    int err = change_sigaction();
+    err = change_sigaction();
     if (err != 0)
         return err;
     
+    pid_t ppid = getpid();
+
     pid_t write_pid = fork();
     if (write_pid == -1)
     {
@@ -115,14 +136,14 @@ int cat(const int argc, const char** argv)
     }
     else if (write_pid == 0)
     {
-        return cat_write(getpid());
+        return cat_write(ppid);
     }
 
-    int err = cat_read(write_pid, argc, argv);
+    err = cat_read(write_pid, argc, argv);
     if (err != 0)
         return err;
 
-    // fprintf(stderr, "Children started by parent process. \n");
+    DBG(fprintf(stderr, "Children started by parent process. \n"));
 
     pid_t pid = wait(NULL);
     if (pid == -1)
@@ -135,11 +156,11 @@ int cat(const int argc, const char** argv)
     if (err != 0)
         return err;
 
-    int err = restore_sigaction();
+    err = restore_sigaction();
     if (err != 0)
         return err;
 
-    // fprintf(stderr, "Children terminated. Parent process terminated. \n");
+    DBG(fprintf(stderr, "Children terminated. Parent process terminated. \n"));
 
     return 0;
 }
@@ -148,7 +169,7 @@ int cat(const int argc, const char** argv)
 
 static int cat_read(const pid_t write_pid, const int argc, const char** argv)
 {
-    // fprintf(stderr, "Child cat_read() started. \n");
+    DBG(fprintf(stderr, "Child cat_read() started. \n"));
 
     assert(argv);
     int err = 0;
@@ -170,6 +191,10 @@ static int cat_read(const pid_t write_pid, const int argc, const char** argv)
             err = close_file(fd);
             if (err != 0)
                 return err;
+
+            err = snd_val(write_pid, '\n');
+            if (err != 0)
+                return err;
         }
     }
     else 
@@ -179,7 +204,13 @@ static int cat_read(const pid_t write_pid, const int argc, const char** argv)
             return err;
     }
 
-    // fprintf(stderr, "Child cat_read() terminated. \n");
+    DBG(fprintf(stderr, "SND: ran out od data, sending stop sig \n"));
+
+    err = snd_stop(write_pid);
+    if (err != 0)
+        return err;
+
+    DBG(fprintf(stderr, "Child cat_read() terminated. \n"));
     return 0;
 }
 
@@ -285,21 +316,21 @@ static int change_procmask()
         return -errno;
     }
 
-    err = sigaddset(*mask, Zero_sig);
+    err = sigaddset(&mask, Zero_sig);
     if (err != 0)
     {
         ERR(fprintf(stderr, "sigaddset() failed: %s \n", strerror(errno)));
         return -errno;
     }
 
-    err = sigaddset(*mask, One_sig);
+    err = sigaddset(&mask, One_sig);
     if (err != 0)
     {
         ERR(fprintf(stderr, "sigaddset() failed: %s \n", strerror(errno)));
         return -errno;
     }
 
-    err = sigaddset(*mask, Feedback_sig);
+    err = sigaddset(&mask, Feedback_sig);
     if (err != 0)
     {
         ERR(fprintf(stderr, "sigaddset() failed: %s \n", strerror(errno)));
@@ -353,7 +384,7 @@ static int snd_stop(pid_t pid)
 
 //---------------------------------------------------------
 
-static int snd_val(pid_t pid, char val)
+static int snd_val(pid_t pid, unsigned char val)
 {
     sigset_t mask;
     int err = sigemptyset(&mask);
@@ -370,9 +401,13 @@ static int snd_val(pid_t pid, char val)
         return -errno;
     }
 
+    DBG(fprintf(stderr, "SND: sending val == %d \n", val));
+
     for (unsigned iter = 0; iter < __CHAR_BIT__; iter++)
     {
         int sig = ((val >> iter) & 1)? One_sig: Zero_sig;
+
+        DBG(fprintf(stderr, "SND: Current bit == %d \n", ((val >> iter) & 1)));
 
         err = kill(pid, sig);
         if (err != 0)
@@ -380,6 +415,8 @@ static int snd_val(pid_t pid, char val)
             ERR(fprintf(stderr, "kill() failed: %s \n", strerror(errno)));
             return -errno;
         }
+
+        DBG(fprintf(stderr, "SND: sent sig, waiting feedback \n"));
 
         int received = 0;
         err = sigwait(&mask, &received);
@@ -389,6 +426,8 @@ static int snd_val(pid_t pid, char val)
             return -err;
         }
 
+        DBG(fprintf(stderr, "SND: received sig, (sig == Feedback_sig) == %d \n", received == Feedback_sig));
+
         assert(received == Feedback_sig);
     }
 
@@ -397,10 +436,10 @@ static int snd_val(pid_t pid, char val)
 
 //---------------------------------------------------------
 
-static int rcv_val(pid_t pid, char* val)
+static int rcv_val(pid_t pid, unsigned char* val)
 {
     assert(val);
-    char rcv = 0;
+    unsigned char rcv = 0;
 
     sigset_t mask;
     int err = sigemptyset(&mask);
@@ -434,12 +473,15 @@ static int rcv_val(pid_t pid, char* val)
             return -err;
         }
 
+        DBG(fprintf(stderr, "RCV: received is: One == %d ; Zero == %d \n", received == One_sig, received == Zero_sig));
+
         assert(received == One_sig || received == Zero_sig);
 
         if (received == One_sig)
-            rcv += 1;
+            rcv |= (1 << iter);
 
-        rcv = rcv << 1;
+        DBG(fprintf(stderr, "RCV: value now is %u \n", rcv));
+        DBG(fprintf(stderr, "RCV: sending feedback signal \n"));
 
         err = kill(pid, Feedback_sig);
         if (err != 0)
@@ -449,7 +491,9 @@ static int rcv_val(pid_t pid, char* val)
         }
     }
 
-    val* = rcv;
+    DBG(fprintf(stderr, "RCV: received total %u \n", rcv));
+
+    (*val) = rcv;
     return 0;
 }
 
@@ -458,9 +502,9 @@ static int rcv_val(pid_t pid, char* val)
 static int cat_read_send_file(const pid_t write_pid, const int fd)
 {
     ssize_t read_ret = 0;
-    char val = 0;
+    unsigned char val = 0;
 
-    while(read_ret = read(fd, &val, sizeof(char)))
+    while(read_ret = read(fd, &val, sizeof(unsigned char)))
     {
         if (read_ret < 0)
         {
@@ -471,14 +515,12 @@ static int cat_read_send_file(const pid_t write_pid, const int fd)
         if (!read_ret)
             break;
     
+        DBG(fprintf(stderr, "SND: read val: %d \n", val));
+
         int err = snd_val(write_pid, val);
         if (err != 0)  
             return err;
     }
-
-    int err = snd_stop(write_pid);
-    if (err != 0)
-        return err;
 
     return 0;
 }
@@ -487,18 +529,20 @@ static int cat_read_send_file(const pid_t write_pid, const int fd)
 
 static int cat_write(const pid_t read_pid)
 {
-    // fprintf(stderr, "Child cat_write() started. \n");
+    DBG(fprintf(stderr, "Child cat_write() started. \n"));
 
     int err = 0;
 
     while (1)
     {
-        char val = 0;
+        unsigned char val = 0;
         err = rcv_val(read_pid, &val);
         if (err != 0)
             return err;
 
-        ssize_t ret = safe_write(1, &val, sizeof(char));
+        DBG(fprintf(stderr, "RCV: received val: %d \n", val));
+
+        ssize_t ret = safe_write(1, &val, sizeof(unsigned char));
         if (ret != 0)
             return ret;
     }

@@ -153,6 +153,10 @@ static int cat_read(const pid_t write_pid, const int argc, const char** argv)
             return err;
     }
 
+    err = sigsend_snd_stop(write_pid);
+    if (err != 0)
+        return err;
+
     // fprintf(stderr, "Child cat_read() terminated. \n");
     return 0;
 }
@@ -219,10 +223,6 @@ static int cat_read_send_file(const pid_t write_pid, const int fd)
         if (err != 0)  
             return err;
     }
-
-    int err = sigsend_snd_stop(write_pid);
-    if (err != 0)
-        return err;
 
     return 0;
 }
