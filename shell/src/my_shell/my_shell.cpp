@@ -149,6 +149,13 @@ static int execute_pipeline(const Cmnds* cmnds)
                     fprintf(stderr, "close() syscall failed: %s \n", strerror(errno));
                     return -errno;
                 }
+
+                err = close(pipe_fd[0]);
+                if (err == -1)
+                {
+                    fprintf(stderr, "close() syscall failed: %s \n", strerror(errno));
+                    return -errno;
+                }
             }
 
             if (iter != 0)

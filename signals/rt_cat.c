@@ -262,10 +262,10 @@ static int sigsend_change_handler(void)
     int sa_flags = SA_SIGINFO;
 
     sigset_t sa_mask;
-    int err = sigemptyset(&sa_mask);
+    int err = sigfillset(&sa_mask);
     if (err != 0)
     {
-        ERR(fprintf(stderr, "sigemptyset() failed: %s \n", strerror(errno)));
+        ERR(fprintf(stderr, "sigfillset() failed: %s \n", strerror(errno)));
         return -errno;
     }
 
@@ -297,27 +297,6 @@ static int cat_write(void)
     while (1);
 
     return 0;
-
-    // while (1)
-    // {
-    //     char val = 0;
-    //
-    //     int received = sigsend_rcv(&val);
-    //     if (received == 0)
-    //         break;
-    //     else if (received < 0)
-    //         return received;
-    //
-    //     err = safe_write(1, &val, sizeof(char));
-    //     if (err != 0)
-    //         return err;
-    // }
-    //
-    // err = sigsend_rcv_end();
-    // if (err != 0) return err;
-    //
-    // fprintf(stderr, "Child cat_write() terminated. \n");
-    // return 0;
 }
 
 //---------------------------------------------------------
