@@ -12,6 +12,9 @@ rt_cat: rt_cat.c
 
 .PHONY: clean say_hello
 
+say_hello:
+	@ echo "Please. specify target."
+
 clean:
 	- rm rt_cat
 	- rm reg_cat
