@@ -12,6 +12,7 @@
 #include <time.h>
 #include <sys/sem.h>
 #include <stdbool.h>
+#include <signal.h>
 
 //=========================================================
 
@@ -64,11 +65,14 @@
 
 //=========================================================
 
-static const unsigned Sem_num    = 3;
+static const unsigned Sem_num    = 5;
 
 static const unsigned Shower_sem = 0;
 static const unsigned Men        = 1;
 static const unsigned Women      = 2;
+
+static const unsigned M_schedule_sem = 3;
+static const unsigned W_schedule_sem = 4;
 
 //=========================================================
 
@@ -81,6 +85,8 @@ enum Sex
 //---------------------------------------------------------
 
 static int consumer(const int sem_id, enum Sex sex, const unsigned num);
+
+static int scheduler(const int sem_id);
 
 //=========================================================
 
@@ -98,14 +104,22 @@ int main(const int argc, const char** argv)
     int sem_id = semget(IPC_PRIVATE, Sem_num, IPC_CREAT | IPC_EXCL | 0700);
     if (sem_id == -1) ERROR_RET(semget, -errno);
 
-    struct sembuf initial = {.sem_num = Shower_sem, .sem_flg = 0, .sem_op = cap};
-    err = semop(sem_id, &initial, 1);
+    struct sembuf initial[] = {{.sem_num = Shower_sem,     .sem_flg = 0, .sem_op = cap},
+                               {.sem_num = M_schedule_sem, .sem_op = +1, .sem_flg = 0}};
+    err = semop(sem_id, initial, 2);
     if (err != 0) ERROR_RET(semop, -errno);
 
     //-----------------------
 
     pid_t pid = 0;
     unsigned total_ct = 0;
+
+    pid_t scheduler_pid = fork();
+    if (pid == 0)
+    {
+        return scheduler(sem_id);
+    }
+    else if (pid == -1) ERROR_RET(fork, -errno);
 
     for (unsigned iter = 0; iter < w_num; iter++)
     {
@@ -143,10 +157,54 @@ int main(const int argc, const char** argv)
         if (term == -1) ERROR_RET(wait, -errno);
     }
 
+    err = kill(scheduler_pid, SIGTERM);
+    if (err == -1) ERROR_RET(kill, -errno);
+
     //-----------------------
 
     err = semctl(sem_id, Sem_num, IPC_RMID);
     if (err == -1) ERROR_RET(semctl, -errno);
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+static int scheduler(const int sem_id)
+{
+    int err = 0;
+
+    DBG(fprintf(stderr, "SHD started \n"));
+
+    bool men = false;
+
+    while (1)
+    {
+        if (men)
+        {
+            struct sembuf op[] = {{.sem_num = M_schedule_sem, .sem_op = +1, .sem_flg = 0},
+                                  {.sem_num = W_schedule_sem, .sem_op = -1, .sem_flg = 0}};
+
+            err = semop(sem_id, op, 2);
+            if (err == -1) ERROR_RET(semop, -errno);
+
+            DBG(fprintf(stderr, "SHD switched timetable \n"));
+            men = false;
+        }
+        else 
+        {
+            struct sembuf op[] = {{.sem_num = M_schedule_sem, .sem_op = -1, .sem_flg = 0},
+                                  {.sem_num = W_schedule_sem, .sem_op = +1, .sem_flg = 0}};
+
+            err = semop(sem_id, op, 2);
+            if (err == -1) ERROR_RET(semop, -errno);
+
+            DBG(fprintf(stderr, "SHD switched timetable \n"));
+            men = true;
+        }
+
+        usleep(400);
+    }
 
     return 0;
 }
@@ -161,7 +219,7 @@ static int consumer(const int sem_id, enum Sex sex, const unsigned num)
 
     DBG(fprintf(stderr, "CSM#%d SEX:%d about to get into shower \n", num, (int) sex));
     
-    struct sembuf entry[3] = { 0 };
+    struct sembuf entry[4] = { 0 };
 
     entry[0].sem_num = Shower_sem;
     entry[0].sem_op  = -1;
@@ -175,7 +233,11 @@ static int consumer(const int sem_id, enum Sex sex, const unsigned num)
     entry[2].sem_op  = 0;
     entry[2].sem_flg = 0;
 
-    err = semop(sem_id, entry, 3);
+    entry[3].sem_num = (sex == MAN)? M_schedule_sem : W_schedule_sem;
+    entry[3].sem_op  = 0;
+    entry[3].sem_flg = 0;
+
+    err = semop(sem_id, entry, 4);
     if (err != 0) ERROR_RET(semop, -errno);
 
     DBG(fprintf(stderr, "CSM#%d SEX:%d showering \n", num, (int) sex));
