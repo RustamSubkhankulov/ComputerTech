@@ -6,15 +6,9 @@
 
 //=========================================================
 
-int eng_word_read(struct Def_word* def_word, char* input);
+int eng_word_read(def_word_t* def_word, const char* input);
 
 //=========================================================
-
-struct Eng_word
-{
-    struct Def_word def_word;
-
-} word_eng_t;
 
 static const word_methods_t Eng_word_methods = {.ctor_def  = Default_word_methods.ctor_def, //
                                                 .ctor_copy = Default_word_methods.ctor_copy,

@@ -10,15 +10,9 @@
 
 //=========================================================
 
-int clang_word_read(struct Def_word* def_word, char* input);
+int clang_word_read(def_word_t* def_word, const char* input);
 
 //=========================================================
-
-struct Clang_word
-{
-    struct Def_word def_word;
-
-} word_clang_t;
 
 static const word_methods_t Clang_word_methods = {.ctor_def  = Default_word_methods.ctor_def, //
                                                   .ctor_copy = Default_word_methods.ctor_copy,

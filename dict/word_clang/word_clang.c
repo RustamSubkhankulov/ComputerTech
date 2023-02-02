@@ -14,17 +14,15 @@ static const int Max_len_clang_word = 31;
 
 //=========================================================
 
-int clang_word_read(struct Def_word* def_word, char* input)
+int clang_word_read(def_word_t* def_word, const char* input)
 {
     assert(def_word);
     assert(input);
 
-    struct Clang_word* clang_word = (struct Clang_word*) def_word;
-
     while (*input == '\n' || *input == '\t' || *input == ' ')
         continue;
 
-    char* word_start = input;
+    char* word_start = (char*) input;
     size_t len = 0;
 
     while (*input != '\0' 
@@ -45,8 +43,8 @@ int clang_word_read(struct Def_word* def_word, char* input)
     memcpy(word_storage, word_start, len);
     *(word_start + len) = '\0';
 
-    clang_word->def_word.data = word_storage;
-    clang_word->def_word.len = len; 
+    def_word->data = word_storage;
+    def_word->len = len; 
 
     return 0;
 }
