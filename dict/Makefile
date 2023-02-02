@@ -73,31 +73,28 @@ all: say_hello
 
 #----------------------------------------------------------
 
-test: $(OBJ_DIR)/dict.o      \
-	  $(OBJ_DIR)/word.o      \
-	  $(OBJ_DIR)/word_rus.o  \
-	  $(OBJ_DIR)/word_eng.o  \
-	  $(OBJ_DIR)/word_clang.o
-	$(CC) $(^) -o $(@)
+test: dir test_compile
+
+test_compile: $(OBJ_DIR)/dict.o      \
+	  		  $(OBJ_DIR)/word_def.o  \
+	  		  $(OBJ_DIR)/word_eng.o  \
+	  		  $(OBJ_DIR)/word_clang.o
+	$(CC) $(^) -o test
 	 
 #----------------------------------------------------------
 
-$(OBJ_DIR)/dict.o: dict/dict.c dict/dict.h word/word.h         \
-										   word_rus/word_rus.h \
+$(OBJ_DIR)/dict.o: dict/dict.c dict/dict.h word_def/word_def.h \
 										   word_eng/word_eng.h \
 										   word_clang/word_clang.h
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
-$(OBJ_DIR)/word.o: word/word.c word/word.h 
+$(OBJ_DIR)/word_def.o: word_def/word_def.c word_def/word_def.h 
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
-$(OBJ_DIR)/word_rus.o: word_rus/word_rus.c word_rus/word_rus.h word/word.h
+$(OBJ_DIR)/word_eng.o: word_eng/word_eng.c word_eng/word_eng.h word_def/word_def.h
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
-$(OBJ_DIR)/word_eng.o: word_eng/word_eng.c word_eng/word_eng.h word/word.h
-	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
-
-$(OBJ_DIR)/word_clang.o: word_clang/word_clang.c word_clang/word_clang.h word/word.h
+$(OBJ_DIR)/word_clang.o: word_clang/word_clang.c word_clang/word_clang.h word_def/word_def.h
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
 #==========================================================
