@@ -78,7 +78,9 @@ test: dir test_compile
 test_compile: $(OBJ_DIR)/dict.o      \
 	  		  $(OBJ_DIR)/word_def.o  \
 	  		  $(OBJ_DIR)/word_eng.o  \
-	  		  $(OBJ_DIR)/word_clang.o
+	  		  $(OBJ_DIR)/word_clang.o\
+			  $(OBJ_DIR)/hasht.o     \
+			  $(OBJ_DIR)/list.o      
 	$(CC) $(^) -o test
 	 
 #----------------------------------------------------------
@@ -95,6 +97,12 @@ $(OBJ_DIR)/word_eng.o: word_eng/word_eng.c word_eng/word_eng.h word_def/word_def
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
 $(OBJ_DIR)/word_clang.o: word_clang/word_clang.c word_clang/word_clang.h word_def/word_def.h
+	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
+
+$(OBJ_DIR)/hasht.o: hasht/hasht.c hasht/hasht.h
+	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
+
+$(OBJ_DIR)/list.o: list/list.c list/list.h 
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
 #==========================================================
