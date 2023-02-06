@@ -6,6 +6,11 @@
 
 //=========================================================
 
+static const size_t Initial_size = 128LU;
+static const float Resize_factor = 0.6f;
+
+//=========================================================
+
 typedef struct Hasht
 {
     list_t* data;
@@ -20,4 +25,3 @@ typedef struct Hasht
 int hasht_ctor(hasht_t* hasht);
 int hasht_dtor(hasht_t* hasht);
 int hasht_add(hasht_t* hasht, def_word_t* word);
-int hasht_show(const hasht_t* hasht);

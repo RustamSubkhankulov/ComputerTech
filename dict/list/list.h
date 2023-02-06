@@ -4,6 +4,12 @@
 
 #include "../word_def/word_def.h"
 
+enum Add_result
+{
+    ADD = 1,   // added word to the list for the first time
+    COUNT = 2, // only count incremented
+};
+
 //=========================================================
 
 struct Node;

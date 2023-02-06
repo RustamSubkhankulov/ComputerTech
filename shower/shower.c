@@ -105,7 +105,7 @@ int main(const int argc, const char** argv)
     if (sem_id == -1) ERROR_RET(semget, -errno);
 
     struct sembuf initial[] = {{.sem_num = Shower_sem,     .sem_flg = 0, .sem_op = cap},
-                               {.sem_num = M_schedule_sem, .sem_op = +1, .sem_flg = 0}};
+                               {.sem_num = W_schedule_sem, .sem_flg = 0, .sem_op = +1}};
     err = semop(sem_id, initial, 2);
     if (err != 0) ERROR_RET(semop, -errno);
 
@@ -115,7 +115,7 @@ int main(const int argc, const char** argv)
     unsigned total_ct = 0;
 
     pid_t scheduler_pid = fork();
-    if (pid == 0)
+    if (scheduler_pid == 0)
     {
         return scheduler(sem_id);
     }
@@ -174,9 +174,9 @@ static int scheduler(const int sem_id)
 {
     int err = 0;
 
-    DBG(fprintf(stderr, "SHD started \n"));
+    DBG(fprintf(stderr, "\n SHD started \n"));
 
-    bool men = false;
+    bool men = true;
 
     while (1)
     {
@@ -188,7 +188,7 @@ static int scheduler(const int sem_id)
             err = semop(sem_id, op, 2);
             if (err == -1) ERROR_RET(semop, -errno);
 
-            DBG(fprintf(stderr, "SHD switched timetable \n"));
+            DBG(fprintf(stderr, "SHD switched timetable from M to W \n"));
             men = false;
         }
         else 
@@ -199,11 +199,11 @@ static int scheduler(const int sem_id)
             err = semop(sem_id, op, 2);
             if (err == -1) ERROR_RET(semop, -errno);
 
-            DBG(fprintf(stderr, "SHD switched timetable \n"));
+            DBG(fprintf(stderr, "SHD switched timetable from W to M \n"));
             men = true;
         }
 
-        usleep(400);
+        usleep(100);
     }
 
     return 0;

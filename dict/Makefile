@@ -80,7 +80,8 @@ test_compile: $(OBJ_DIR)/dict.o      \
 	  		  $(OBJ_DIR)/word_eng.o  \
 	  		  $(OBJ_DIR)/word_clang.o\
 			  $(OBJ_DIR)/hasht.o     \
-			  $(OBJ_DIR)/list.o      
+			  $(OBJ_DIR)/list.o      \
+			  $(OBJ_DIR)/test.o
 	$(CC) $(^) -o test
 	 
 #----------------------------------------------------------
@@ -88,6 +89,11 @@ test_compile: $(OBJ_DIR)/dict.o      \
 $(OBJ_DIR)/dict.o: dict/dict.c dict/dict.h word_def/word_def.h \
 										   word_eng/word_eng.h \
 										   word_clang/word_clang.h
+	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
+
+$(OBJ_DIR)/test.o: tests/test.c dict/dict.h word_def/word_def.h \
+						 				    word_eng/word_eng.h \
+						 				    word_clang/word_clang.h
 	$(CC) $(<) -c -o $(@) $(DEBUG_FLAGS) $(CFLAGS)
 
 $(OBJ_DIR)/word_def.o: word_def/word_def.c word_def/word_def.h 

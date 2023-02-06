@@ -5,7 +5,9 @@
         "config.h": "c",
         "poll.h": "c",
         "signal.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "assert.h": "c",
+        "random": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

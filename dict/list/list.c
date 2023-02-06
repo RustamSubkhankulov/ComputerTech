@@ -54,7 +54,7 @@ int list_add(list_t* list, def_word_t* word)
     if (present != NULL)
     {
         present->count += 1;
-        return 0;
+        return COUNT;
     }
 
     node_t* new_node = (node_t*) calloc(1, sizeof(node_t));
@@ -78,7 +78,7 @@ int list_add(list_t* list, def_word_t* word)
         list->size += 1;
     }
 
-    return 0;
+    return ADD;
 }
 
 //---------------------------------------------------------
