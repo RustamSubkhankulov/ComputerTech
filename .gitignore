@@ -1,43 +1,43 @@
 .gitignore
 
-cat/obj
-cat/my_cat
+os/cat/obj
+os/cat/my_cat
 
-cp/obj
-cp/my_cp
+os/cp/obj
+os/cp/my_cp
 
-id/obj
-id/my_id
+os/id/obj
+os/id/my_id
 
-echo/obj
-echo/print_pids
+os/echo/obj
+os/echo/print_pids
 
-fork/obj
-fork/exec
+os/fork/obj
+os/fork/exec
 
-ls/obj
-ls/my_ls
+os/ls/obj
+os/ls/my_ls
 
-shell/my_shell
-shell/obj
+os/shell/my_shell
+os/shell/obj
 
-msgq/obj
-msgq/stad
+os/msgq/obj
+os/msgq/stad
 
-shmem/shmem
-shmem/obj
+os/shmem/shmem
+os/shmem/obj
 
-monitor/exec_cat
-monitor/obj
+os/monitor/exec_cat
+os/monitor/obj
 
-signals/trash
-signals/reg_cat
-signals/rt_cat
+os/signals/trash
+os/signals/reg_cat
+os/signals/rt_cat
 
-megacat/megacat
+os/megacat/megacat
 
-pizza/pizza
+os/pizza/pizza
 
-factory
+os/factory
 
-shower/shower
+os/shower/shower
