@@ -13,9 +13,9 @@ class View_graph: public View
         View_graph()
             {}
 
-        View_graph           (const View_graph& that) = default;
-        View_graph operator= (const View_graph& that) = default;
-        ~View_graph() override                       = default;
+        View_graph            (const View_graph& that) = default;
+        View_graph& operator= (const View_graph& that) = default;
+        ~View_graph() override                         = default;
 
         void draw(void) const override;
 };

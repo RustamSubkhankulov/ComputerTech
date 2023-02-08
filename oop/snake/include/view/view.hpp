@@ -10,7 +10,7 @@ class View
 {
     public:
 
-        static View* current = nullptr;
+        static View* current;
 
         static View* get_view(const std::string& what = std::string());
 

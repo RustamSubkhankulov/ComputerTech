@@ -13,9 +13,9 @@ class View_text: public View
         View_text()
             {}
 
-        View_text           (const View_text& that) = default;
-        View_text operator= (const View_text& that) = default;
-        ~View_text() override                       = default;
+        View_text            (const View_text& that) = default;
+        View_text& operator= (const View_text& that) = default;
+        ~View_text() override                        = default;
 
         void draw(void) const override;
 };

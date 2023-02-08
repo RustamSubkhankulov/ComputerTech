@@ -2,33 +2,73 @@
 #CONFIG
 #==========================================================
 
-# compilers
 CXX  = g++
 CC   = gcc
+CXXFLAGS = -O0 -g 
+CFLAGS   = -O0 -g 
 
-# object files output directory
 OBJ_DIR = obj
-
-# source files input directory
 SRC_DIR = src
-
-# header files directory
 INC_DIR = include
 
-# bool flag (0 or 1) - shows whether use flags ot not
 USE_DEBUG_FLAGS = 0
 
 #==========================================================
-# FLAGS
+# SOURCE / OBJECT FILES LIST
 #==========================================================
 
-# flags for C++ 
-CXXFLAGS = -O0 -g 
+SRC_PATH = $(SRC_DIR)/$(1)/$(1).cpp
 
-# flags for C
-CFLAGS   = -O0 -g 
+MODULES = model view view_text view_graph controller main 
+
+OBJ = $(foreach module, $(MODULES), $(OBJ_DIR)/$(module).o)
+SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))
+
+#==========================================================
+# TARGETS
+#==========================================================
+
+all: dir build #rmdep
+build: snake 
 
 #----------------------------------------------------------
+
+snake: $(OBJ)
+	$(CXX) $(^) -o $(@)
+
+define build_rule =
+$(OBJ_DIR)/$(1).o: $(call SRC_PATH,$(1)) 
+	$(CXX) $(call SRC_PATH,$(1)) -c -o $(OBJ_DIR)/$(1).o $(DEBUG_FLAGS) $(CXXFLAGS)
+endef
+
+-include depends
+
+$(foreach module, $(MODULES), $(eval $(call build_rule,$(module))))
+
+#==========================================================
+# .PHONY TARGETS
+#==========================================================
+
+.PHONY: dir mkdep clean rmdep
+
+dir:
+	@ mkdir -p $(OBJ_DIR)
+
+clean:
+	- rm $(OBJ_DIR)/*.o 
+	- rm snake
+
+#==========================================================
+# DEPENDENCIES
+#==========================================================
+
+mkdep: $(SRC)
+	$(CXX) -MM $(SRC) -o depends
+
+rmdep:
+	-rm depends
+
+#==========================================================
 
 ifeq ($(USE_DEBUG_FLAGS), 1)
 
@@ -70,51 +110,3 @@ else
 	FLAGS =
 
 endif
-
-#==========================================================
-# OBJECT FILES LIST
-#==========================================================
-
-OBJ = $(OBJ_DIR)/model.o      \
-	  $(OBJ_DIR)/view.o       \
-	  $(OBJ_DIR)/view_text.o  \
-	  $(OBJ_DIR)/view_graph.o \
-	  $(OBJ_DIR)/controller.o \
-	  $(OBJ_DIR)/main.o
-
-SRC = ## TODO MAKE SRC FROM OBJ
-
-#==========================================================
-# TARGETS
-#==========================================================
-
-all: dir build
-
-build: snake 
-
-delete_exec: 
-	-rm snake 
-
-#----------------------------------------------------------
-
-snake: $(OBJ)
-	$(CXX) $(OBJ) -o $(@)
-
-#----------------------------------------------------------
-
-$(OBJ_DIR)/%.o: ## SRC_FROM_OBJ
-	$(CXX) $(>) -c -i $(@) $(DEBUG_FLAGS) $(CXXFLAGS)
-
-#==========================================================
-# .PHONY TARGETS
-#==========================================================
-
-.PHONY: dir clean delete_exec
-
-dir:
-	@ mkdir -p $(OBJ_DIR)
-
-clean: delete_exec
-	- rm $(OBJ_DIR)/*.o 
-
-#==========================================================

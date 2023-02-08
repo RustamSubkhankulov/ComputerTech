@@ -14,6 +14,6 @@
 
 int main(void)
 {
-    std::cout << "Hello wolrd" << endl;
+    std::cout << "Hello wolrd" << std::endl;
     return 0;
 }
