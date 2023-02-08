@@ -1,6 +1,3 @@
-# TIPS
-# $(OBJ: .o = .cpp) auto replacement
-
 #==========================================================
 #CONFIG
 #==========================================================
@@ -25,11 +22,11 @@ USE_DEBUG_FLAGS = 0
 # FLAGS
 #==========================================================
 
-# flags for c++ 
-CXXFLAGS = -O3
+# flags for C++ 
+CXXFLAGS = -O0 -g 
 
-# flags for c
-CFLAGS   = -O3
+# flags for C
+CFLAGS   = -O0 -g 
 
 #----------------------------------------------------------
 
@@ -80,20 +77,23 @@ endif
 
 OBJ = $(OBJ_DIR)/model.o      \
 	  $(OBJ_DIR)/view.o       \
+	  $(OBJ_DIR)/view_text.o  \
+	  $(OBJ_DIR)/view_graph.o \
 	  $(OBJ_DIR)/controller.o \
 	  $(OBJ_DIR)/main.o
 
-#==========================================================
-# FUNCTIONS
-#==========================================================
-
-MINIMAL_DEP = $(SRC_DIR)/$(1)/$(1).cpp $(INC_DIR)/$(1)/$(1).hpp
+SRC = ## TODO MAKE SRC FROM OBJ
 
 #==========================================================
 # TARGETS
 #==========================================================
 
-all: say_hello
+all: dir build
+
+build: snake 
+
+delete_exec: 
+	-rm snake 
 
 #----------------------------------------------------------
 
@@ -102,38 +102,19 @@ snake: $(OBJ)
 
 #----------------------------------------------------------
 
-$(OBJ_DIR)/main.o: 					$(SRC_DIR)/main.c
-	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS) 
-
-#----------------------------------------------------------
-
-$(OBJ_DIR)/model.o: 				$(call MINIMAL_DEP, model)
-	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS) 
-
-#----------------------------------------------------------
-
-$(OBJ_DIR)/view.o: 					$(call MINIMAL_DEP, view)
-	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS) 
-
-#----------------------------------------------------------
-
-$(OBJ_DIR)/controller.o: 			$(call MINIMAL_DEP, controller)
-	$(CXX) 							$(<) -c -o $(@) $(DEBUG_FLAGS) $(CXXFLAGS) 
+$(OBJ_DIR)/%.o: ## SRC_FROM_OBJ
+	$(CXX) $(>) -c -i $(@) $(DEBUG_FLAGS) $(CXXFLAGS)
 
 #==========================================================
 # .PHONY TARGETS
 #==========================================================
 
-.PHONY: dir clean say_hello
-
-say_hello:
-	@ echo "Please, specify make target"
+.PHONY: dir clean delete_exec
 
 dir:
-	@ mkdir -p obj
+	@ mkdir -p $(OBJ_DIR)
 
-clean:
+clean: delete_exec
 	- rm $(OBJ_DIR)/*.o 
-	- rm rtrace
 
 #==========================================================
