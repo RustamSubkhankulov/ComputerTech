@@ -8,6 +8,15 @@
 
 class View
 {
+    protected: // ctor is private, all derivated class are not accessible for users (outside of view.cpp)
+
+        View() { return; };
+
+    private:
+
+        View            (const View& that) = default;
+        View& operator= (const View& that) = default;
+
     public:
 
         static View* current;
