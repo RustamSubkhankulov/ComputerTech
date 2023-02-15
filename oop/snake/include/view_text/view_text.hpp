@@ -14,7 +14,7 @@ class View_text: public View
 {
     private:
 
-        mutable Vector wnsz_{}; // TODO colors, turn off cursor & on of dtor
+        mutable Vector wnsz_{};
         struct sigaction oldact_{};
 
     public: 
