@@ -15,7 +15,12 @@ View* View::current = nullptr;
 View* View::get_view(const std::string& what)
 {
     if (current != nullptr)
+    {
+        if (!what.empty())
+            return nullptr;
+
         return current;
+    }
 
     if (what == "text")
         return new View_text;

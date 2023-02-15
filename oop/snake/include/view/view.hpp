@@ -2,6 +2,10 @@
 
 //=========================================================
 
+#include "../vector/vector.hpp"
+
+//---------------------------------------------------------
+
 #include <string>
 
 //=========================================================
@@ -12,19 +16,21 @@ class View
 
         View() { return; };
 
-    private:
-
-        View            (const View& that) = default;
-        View& operator= (const View& that) = default;
-
     public:
 
         static View* current;
 
         static View* get_view(const std::string& what = std::string());
 
-        virtual void draw(void) const = 0;
+        virtual Vector get_winsize() const = 0;
+        virtual void draw()  = 0;
+        
         virtual ~View() { return; };
+
+    private:
+
+        View            (const View& that) = default;
+        View& operator= (const View& that) = default;
 };
 
 //---------------------------------------------------------

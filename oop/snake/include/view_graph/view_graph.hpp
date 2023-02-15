@@ -17,5 +17,7 @@ class View_graph: public View
         View_graph& operator= (const View_graph& that) = default;
         ~View_graph() override                         = default;
 
-        void draw(void) const override;
+        Vector get_winsize() const override;
+
+        void draw() override;
 };
