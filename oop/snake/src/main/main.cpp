@@ -12,7 +12,9 @@
 int main(void)
 {
     View* view = View::get_view("text");
-    view->draw();
+    
+    while(1)
+        view->draw();
 
     return 0;
 }
