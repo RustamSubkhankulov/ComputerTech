@@ -107,8 +107,6 @@ list_del(struct List *list) {
     return list;
 }
 
-static struct Page *alloc_page(int class, int flags);
-
 void
 ensure_free_desc(size_t count) {
     if (free_desc_count < count) {
@@ -271,7 +269,7 @@ page_lookup(struct Page *hint, uintptr_t addr, int class, enum PageState type, b
     return node;
 }
 
-static void
+void
 page_ref(struct Page *node) {
     if (!node) return;
     if (!node->refc++) {
@@ -282,7 +280,7 @@ page_ref(struct Page *node) {
     }
 }
 
-static void
+void
 page_unref(struct Page *page) {
     if (!page) return;
     assert_physical(page);
@@ -549,7 +547,7 @@ dump_page_table(pte_t *pml4) {
 }
 
 /* Just allocate page, without mapping it */
-static struct Page *
+struct Page *
 alloc_page(int class, int flags) {
     struct List *li = NULL;
     struct Page *peer = NULL;

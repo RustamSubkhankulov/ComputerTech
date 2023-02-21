@@ -18,6 +18,7 @@ static struct Taskstate ts;
 
 extern void clock_thdlr(void);
 extern void timer_thdlr(void);
+extern void gpu_thdlr(void);
 
 /* For debugging, so print_trapframe can distinguish between printing
  * a saved trapframe and printing the current trapframe and print some
@@ -107,6 +108,12 @@ trap_init(void) {
 
     /* Per-CPU setup */
     trap_init_percpu();
+}
+
+void gpu_idt_init(void)
+{
+    idt[IRQ_OFFSET + IRQ_GPU] = GATE(0, GD_KT, (uint64_t) (&gpu_thdlr), 0);
+    return;
 }
 
 void clock_idt_init(void)
