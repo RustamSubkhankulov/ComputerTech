@@ -1,6 +1,8 @@
 DOOM (1993) JOS-port
 ===================
 
+![doom.jpg](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/pictures/doom.jpg)
+
 Description
 -----------
 DOOM JOS-port is an invidual task, which is based on course 
