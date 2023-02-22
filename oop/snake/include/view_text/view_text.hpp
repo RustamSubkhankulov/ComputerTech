@@ -56,6 +56,7 @@ class View_text: public View
 
     private:
 
+        Vector get_winsize_real() const;
         void draw_frame();
 
         void putxy(const char sym, const Vector& coord);

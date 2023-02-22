@@ -60,7 +60,7 @@ class Snake
 
     public:
 
-        static constexpr int Snake_len = 8;
+        static constexpr int Snake_len = 7;
 
         Snake(const Coords_list& coords_list)
         {

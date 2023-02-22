@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <cstdlib>
+#include <ctime>
 
 //---------------------------------------------------------
 
@@ -11,13 +13,15 @@
 
 int main(void)
 {
+    std::srand(std::time(0));
+
     View* view = View::get_view("text");
     
     Model model{};
     Vector field_size = view->get_winsize();
 
     model.generate_snakes(field_size, 1);  // 1 snake
-    model.generate_rabbits(field_size, 3); // 3 rabbits
+    model.generate_rabbits(field_size, 10); // 3 rabbits
 
     view->set_model(&model);
 

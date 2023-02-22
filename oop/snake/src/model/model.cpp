@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <ctime>
+#include <cstdio>
 
 //---------------------------------------------------------
 
@@ -7,9 +8,7 @@
 
 //=========================================================
 
-using std::srand;
 using std::rand;
-using std::time;
 
 //=========================================================
 
@@ -17,7 +16,6 @@ using std::time;
 
 static int get_rand_offs()
 {
-    srand(time(0));
     return (rand() % 3) - 1;
 }
 
@@ -32,7 +30,6 @@ static Coords get_rand_dir()
 
 static Coords get_rand_coords(const Vector& field_size)
 {
-    srand(time(0));
     return Coords{rand() % field_size.x(), rand() & field_size.y()};
 } 
 
@@ -45,7 +42,7 @@ static Coords_list get_rand_coords_list(const Vector& field_size, size_t len)
     Coords start = get_rand_coords(field_size);
     coords_list.push_back(start);
 
-    Coords* prev = &start;
+    Coords prev = start;
 
     for (unsigned iter = 0; iter < len - 1; iter++)
     {
@@ -55,27 +52,30 @@ static Coords_list get_rand_coords_list(const Vector& field_size, size_t len)
     again:
         dir = get_rand_dir();
 
-        if (dir.x() == 1 && dir.y() == 1)
+        if (!(dir.x() == 0 || dir.y() == 0))
             goto again;
 
-        if ((prev->x() == 0 && dir.x() == -1)
-          || prev->x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
+        if ((prev.x() == 0 && dir.x() == -1)
+          || prev.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
             dir.set_x(0);
 
-        if ((prev->y() == 0 && dir.y() == -1)
-          || prev->y() == field_size.y() - 1 && dir.y() == 1)
+        if ((prev.y() == 0 && dir.y() == -1)
+          || prev.y() == field_size.y() - 1 && dir.y() == 1)
             dir.set_y(0);
 
         if (dir.x() == 0 && dir.y() == 0)
             goto again;
 
-        cur = *prev + dir;
+        cur = prev + dir;
 
-        if (cur.x() == prev->x() && cur.y() == prev->y())
-            goto again;
+        for (const Coords& elem : coords_list)
+        {
+            if (cur.x() == elem.x() && cur.y() == prev.y())
+                goto again;
+        }
 
         coords_list.push_back(cur);
-        prev = &cur;
+        prev = cur;
     }
 
     return coords_list;
@@ -116,27 +116,30 @@ void Snake::update(const Vector& field_size)
     Coords dir{};
     Coords new_head{};
 
-    while (1)
+again:
+
+    dir = get_rand_dir();
+
+    if (!(dir.x() == 0 || dir.y() == 0))
+        goto again;
+
+    if ((head.x() == 0 && dir.x() == -1)
+        || head.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
+        dir.set_x(0);
+
+    if ((head.y() == 0 && dir.y() == -1)
+        || head.y() == field_size.y() - 1 && dir.y() == 1)
+        dir.set_y(0);
+
+    if (dir.x() == 0 && dir.y() == 0)
+        goto again;
+
+    new_head = head + dir;
+    
+    for (const Coords& coords : coords_list_)
     {
-        dir = get_rand_dir();
-
-        if (dir.x() == 1 && dir.y() == 1)
-            continue;
-
-        if ((head.x() == 0 && dir.x() == -1)
-          || head.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
-            dir.set_x(0);
-
-        if ((head.y() == 0 && dir.y() == -1)
-          || head.y() == field_size.y() - 1 && dir.y() == 1)
-            dir.set_y(0);
-
-        if (dir.x() == 0 && dir.y() == 0)
-            continue;
-
-        new_head = head + dir;
-        if (!(new_head.x() == head.x() && new_head.y() == head.y()))
-            break;
+        if (coords.x() == new_head.x() && coords.y() == new_head.y())
+            goto again;
     }
 
     coords_list_.pop_front();

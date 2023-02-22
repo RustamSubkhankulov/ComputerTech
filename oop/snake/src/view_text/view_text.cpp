@@ -129,20 +129,23 @@ void View_text::draw()
     if (model != nullptr);
     {
         model->update(get_winsize());
-        draw_rabbits(model);
         draw_snakes(model);
+        draw_rabbits(model);
     }
 
-    pause();
+    usleep(500000);
 }
 
 //---------------------------------------------------------
 
 void View_text::draw_rabbits(Model* model)
 {
+    Vector offset{Lft_padding + 1, Top_padding + 1};
+    set_attr(BLACK, WHITE, 1, 0, 0);
+
     for (const Rabbit& rabbit : model->rabbits)
     {
-        putxy(Rabbit_symb, rabbit.get_coords());
+        putxy(Rabbit_symb, rabbit.get_coords() + offset);
     }
 }
 
@@ -150,20 +153,23 @@ void View_text::draw_rabbits(Model* model)
 
 void View_text::draw_snakes(Model* model)
 {
+    Vector offset{Lft_padding + 1, Top_padding + 1};
+    set_attr(BLACK, GREEN, 1, 0, 0);
+
     for (const Snake& snake : model->snakes)
     {
         Coords_list coords_list = snake.get_coords_list();
 
         for (const Coords& coords : coords_list)
         {
-            putxy(Snake_symb, coords);
+            putxy(Snake_symb, coords + offset);
         }
     }
 }
 
 //---------------------------------------------------------
 
-Vector View_text::get_winsize() const
+Vector View_text::get_winsize_real() const
 {
     if (Wnsz_renew_needed == true)
     {
@@ -180,6 +186,14 @@ Vector View_text::get_winsize() const
     }    
 
     return wnsz_;
+}
+
+//---------------------------------------------------------
+
+Vector View_text::get_winsize() const
+{
+    Vector wnsz = get_winsize_real();
+    return wnsz - Vector{Lft_padding + Rgt_padding, Top_padding + Btm_padding};
 }
 
 //---------------------------------------------------------
@@ -232,7 +246,7 @@ void View_text::cls()
 
 void View_text::draw_frame()
 {
-    Vector wnsz = get_winsize();
+    Vector wnsz = get_winsize_real();
     size_t cols = (size_t) wnsz.x();
     size_t rows = (size_t) wnsz.y();
 
@@ -257,7 +271,7 @@ void View_text::draw_frame()
     set_attr(MAGENTA, BLACK, true, false, false);
     hline(3, 1, cols, '=');
 
-    set_attr(WHITE, WHITE, false, false, false);
+    set_attr(BROWN, BROWN, false, false, false);
     for (size_t nrow = 4; nrow < rows - 2; nrow++)
     {
         hline(nrow, 1, cols, ' ');
