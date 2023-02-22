@@ -226,6 +226,7 @@ QEMUOPTS += -bios $(OVMF_FIRMWARE)
 #TODOITASK
 ifeq (${ITASK}, 1) 
 QEMUOPTS += -device virtio-vga
+# QEMUOPTS += -device virtio-gpu-pci
 endif 
 
 define POST_CHECKOUT

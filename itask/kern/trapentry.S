@@ -27,12 +27,12 @@ timer_thdlr:
     call trap
     jmp .
 
-.globl gpu_thdlr
-.type gpu_thdlr, @function
-gpu_thdlr:
+.globl virtio_thdlr
+.type virtio_thdlr, @function
+virtio_thdlr:
     call save_trapframe_trap
     # Set trap code for trapframe
-    movl $(IRQ_OFFSET + IRQ_GPU), 136(%rsp)
+    movl $(IRQ_OFFSET + IRQ_VIRTIO), 136(%rsp)
     call trap
     jmp .
 

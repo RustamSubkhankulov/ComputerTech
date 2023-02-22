@@ -210,22 +210,6 @@ enum Pci_class
     PCI_CLASS_UNASSIGNED_CLASS        = 0xFF,
 };
 
-/* Network controller subclasses */
-
-enum Pci_network_subclass
-{
-    PCI_SUBCLASS_ETHERNET   = 0x0,
-    PCI_SUBCLASS_TOKEN_RING = 0x1,
-    PCI_SUBCLASS_FDDI       = 0x2,
-    PCI_SUBCLASS_ATM        = 0x3,
-    PCI_SUBCLASS_ISDN       = 0x4,
-    PCI_SUBCLASS_WORLDFLIP  = 0x5,
-    PCI_SUBCLASS_PICMG_2_14 = 0x6,
-    PCI_SUBCLASS_INFINIBAND = 0x7,
-    PCI_SUBCLASS_FABRIC     = 0x8,
-    PCI_SUBCLASS_OTHER      = 0x80,
-};
-
 /* PCI device opeartions */
 
 uint16_t pci_dev_get_stat_reg(const pci_dev_t* pci_dev);

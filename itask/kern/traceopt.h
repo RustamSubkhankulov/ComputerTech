@@ -61,7 +61,11 @@
 #endif 
 
 #ifndef trace_gpu
-#define trace_gpu 0
+#define trace_gpu 1
+#endif 
+
+#ifndef trace_virtio
+#define trace_virtio 1
 #endif 
 
 #endif

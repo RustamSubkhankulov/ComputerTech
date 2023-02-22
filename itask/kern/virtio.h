@@ -141,6 +141,11 @@ typedef struct Buffer_info
 
 } buffer_info_t;
 
+int virtio_dev_init(virtio_dev_t* virtio_dev);
+int virtio_dev_reset(virtio_dev_t* virtio_dev);
+int virtio_dev_negf(virtio_dev_t* virtio_dev, uint32_t requested_f);  
+int virtio_dev_fin_init(virtio_dev_t* virtio_dev);  
+
 uint8_t  virtio_read8 (const virtio_dev_t* virtio_dev, uint32_t offs);
 uint16_t virtio_read16(const virtio_dev_t* virtio_dev, uint32_t offs);
 uint32_t virtio_read32(const virtio_dev_t* virtio_dev, uint32_t offs);

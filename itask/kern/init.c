@@ -12,6 +12,7 @@
 #include <kern/pmap.h>
 #include <kern/env.h>
 #include <kern/timer.h>
+#include <kern/virtio_vga.h>
 #include <kern/trap.h>
 #include <kern/sched.h>
 #include <kern/picirq.h>
@@ -181,6 +182,8 @@ i386_init(void) {
     ENV_CREATE(user_hello, ENV_TYPE_USER);
 #endif /* TEST* */
 #endif
+
+    init_virtio_vga();
 
     // Break to monitor
     assert(false);

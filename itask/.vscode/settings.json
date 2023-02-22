@@ -20,6 +20,11 @@
         "sstream": "c",
         "streambuf": "c",
         "system_error": "c",
-        "mmu.h": "c"
+        "mmu.h": "c",
+        "assert.h": "c",
+        "x86.h": "c",
+        "string.h": "c",
+        "error.h": "c",
+        "uefi.h": "c"
     }
 }

@@ -6,6 +6,7 @@
 #include <kern/virtio.h>
 #include <kern/pmap.h>
 #include <inc/string.h>
+#include <kern/picirq.h>
 
 static size_t vring_calc_size(uint16_t size);
 static void*  vring_alloc_mem(size_t mem_size);
@@ -13,6 +14,95 @@ static uint16_t virtio_descr_add_buffers(virtqueue_t* virtqueue, const buffer_in
                                                                              unsigned buffers_num);
 
 static int virtqueue_allocate_copy_buf(virtqueue_t* virtqueue, size_t chunk_size);
+
+int virtio_dev_reset(virtio_dev_t* virtio_dev)
+{
+    assert(virtio_dev != NULL);
+
+    virtio_write8(virtio_dev, VIRTIO_PCI_DEVICE_STATUS, 0x0);
+    uint8_t device_status = 0;
+
+    do
+    {
+        device_status = virtio_read8(virtio_dev, VIRTIO_PCI_DEVICE_STATUS);
+
+    } while (device_status != 0);
+
+    if (trace_virtio)
+        cprintf("VirtIO nic device has been reset. \n");
+
+    return 0;
+}
+
+int virtio_dev_init(virtio_dev_t* virtio_dev)
+{
+    assert(virtio_dev != NULL);
+
+    if (trace_virtio)
+        cprintf("VirtIO general initialization started. \n");
+
+    virtio_set_dev_status_flag(virtio_dev, VIRTIO_PCI_STATUS_ACKNOWLEDGE);
+    virtio_set_dev_status_flag(virtio_dev, VIRTIO_PCI_STATUS_DRIVER);
+
+    return 0;
+}
+
+int virtio_dev_negf(virtio_dev_t* virtio_dev, uint32_t requested_f)
+{
+    assert(virtio_dev != NULL);
+
+    if (trace_virtio)
+        cprintf("VirtIO nic: performing features negotiating. \n");
+
+    uint32_t supported_f = virtio_read32(virtio_dev, VIRTIO_PCI_DEVICE_FEATURES);
+    if (trace_virtio)
+        cprintf("Device features: 0x%x \n", supported_f);
+
+    if (trace_virtio)
+    {
+        cprintf("Guest features (requested): 0x%x \n", requested_f);
+        cprintf("Supported & Requested == 0x%x \n", supported_f & requested_f);
+    }
+
+    if (requested_f != 0 && (supported_f & requested_f) != requested_f)
+    {
+        if (trace_virtio)
+            cprintf("Device does not support requested features. \n");
+
+        virtio_set_dev_status_flag(virtio_dev, VIRTIO_PCI_STATUS_FAILED);
+        return -1;
+    }
+
+    virtio_dev->features = supported_f & requested_f;
+    virtio_write32(virtio_dev, VIRTIO_PCI_GUEST_FEATURES, requested_f);
+
+    return 0;
+}
+
+int virtio_dev_fin_init(virtio_dev_t* virtio_dev)
+{
+    assert(virtio_dev != NULL);
+
+    if (virtio_dev->pci_dev_general.interrupt_line != IRQ_VIRTIO)
+    {
+        cprintf("VirtIO device supported only on IRQ 11 \n");
+
+        virtio_set_dev_status_flag(virtio_dev, VIRTIO_PCI_STATUS_FAILED);
+        return -1;
+    }
+
+    pic_irq_unmask(IRQ_VIRTIO);
+
+    if (trace_virtio)
+        cprintf("IRQ_VIRTIO (11) unmasked. \n");
+
+    if (trace_virtio)
+        cprintf("VirtIO device initialization completed. Sending DRIVER_OK to device. \n");
+
+    virtio_set_dev_status_flag(virtio_dev, VIRTIO_PCI_STATUS_DRIVER_OK); 
+
+    return 0;
+}
 
 int virtio_snd_buffers(virtio_dev_t* virtio_dev, unsigned qind, const buffer_info_t* buffer_info, 
                                                                             unsigned buffers_num)

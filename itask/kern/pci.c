@@ -110,7 +110,7 @@ int pci_dev_find(pci_dev_t* pci_dev, uint16_t class, uint16_t subclass, uint16_t
     {
         for (dev = 0; dev < MAX_DEV; dev++)
         {
-            function= 0;
+            function = 0;
 
             if (check_pci_device(bus, dev, function) == false)
                 continue;
