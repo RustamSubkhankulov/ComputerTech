@@ -22,6 +22,8 @@ const static enum Pci_class
 const static enum Pci_display_controller_subclass 
                   Virtio_vga_pci_subclass = PCI_SUBCLASS_VGA_COMPATIBLE_CONTROLLER;
 
+// const static enum Pci_display_controller_subclass 
+//                   Virtio_vga_pci_subclass = PCI_SUBCLASS_OTHER;
 
 const static uint16_t Virtio_vga_device_id     = 0x10;
 const static uint16_t Virtio_vga_pci_device_id = 0x1040 + Virtio_vga_device_id;
