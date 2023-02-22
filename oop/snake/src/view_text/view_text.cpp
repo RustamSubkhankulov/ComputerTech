@@ -33,6 +33,13 @@ static const int CSI_underline_off = 24;
 static bool Wnsz_renew_needed = true;
 // static global variable since static functions cannot be declared as friend w/o forward declaration
 
+//---------------------------------------------------------
+
+static const char Rabbit_symb = 'R';
+
+static const char Snake_symb      = 'S';
+// static const char Snake_symb_head = 'H';
+
 //=========================================================
 
 static void sighandler(int signum);
@@ -114,10 +121,44 @@ static void sighandler(int signum)
 //---------------------------------------------------------
 
 void View_text::draw()
-{
+{    
     cls();
     draw_frame();
+
+    Model* model = get_model();
+    if (model != nullptr);
+    {
+        model->update(get_winsize());
+        draw_rabbits(model);
+        draw_snakes(model);
+    }
+
     pause();
+}
+
+//---------------------------------------------------------
+
+void View_text::draw_rabbits(Model* model)
+{
+    for (const Rabbit& rabbit : model->rabbits)
+    {
+        putxy(Rabbit_symb, rabbit.get_coords());
+    }
+}
+
+//---------------------------------------------------------
+
+void View_text::draw_snakes(Model* model)
+{
+    for (const Snake& snake : model->snakes)
+    {
+        Coords_list coords_list = snake.get_coords_list();
+
+        for (const Coords& coords : coords_list)
+        {
+            putxy(Snake_symb, coords);
+        }
+    }
 }
 
 //---------------------------------------------------------

@@ -19,7 +19,7 @@ USE_DEBUG_FLAGS = 0
 
 SRC_PATH = $(SRC_DIR)/$(1)/$(1).cpp
 
-MODULES = model view view_text view_graph controller main 
+MODULES = model view view_text view_graph controller main vector
 
 OBJ = $(foreach module, $(MODULES), $(OBJ_DIR)/$(module).o)
 SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))

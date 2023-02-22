@@ -74,4 +74,7 @@ class View_text: public View
 
         void turn_off_carriage();
         void turn_on_carriage();
+
+        void draw_rabbits(Model* model);
+        void draw_snakes(Model* model);
 };
