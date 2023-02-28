@@ -69,12 +69,7 @@ typedef struct PCI_dev_general
 {
     pci_dev_t pci_dev;
 
-    uint32_t BAR0;
-    uint32_t BAR1;
-    uint32_t BAR2;
-    uint32_t BAR3;
-    uint32_t BAR4;
-    uint32_t BAR5;
+    uint32_t BAR[6];
 
     uint32_t cardbus_cis_ptr;
 
@@ -175,6 +170,9 @@ typedef struct PCI_dev_general
 #define MS_BAR_PREFETCH  0x8        // does not have read side effects 
 #define MS_BAR_TYPE      0x6        // 0 - 32 bit , 2 - 64 bit, 1 - reserved 
 #define MS_BAR_ALWAYS0   0x1        // to distinguish
+
+#define MS_BAR_TYPE_32 0x0 << 1
+#define MS_BAR_TYPE_64 0x2 << 1
 
 /* I/O Space BAR Layout */
 

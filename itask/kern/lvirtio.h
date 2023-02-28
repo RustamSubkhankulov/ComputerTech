@@ -14,6 +14,32 @@ const static uint16_t Virtio_pci_vendor_id = 0x1AF4;
 
 #define PCI_DEVICE_ID_CALC_OFFSET 0x1040
 
+/* For device configuration access, the driver MUST use 8-bit wide accesses 
+ * for 8-bit wide fields, 16-bit wide and aligned accesses for 16-bit wide 
+ * fields and 32-bit wide and aligned accesses for 32-bit and 64-bit wide 
+ * fields. For 64-bit fields, the driver MAY access each of the high and 
+ * low 32-bit parts of the field independently. 
+*/
+
+/* Virtio I/O registers            Offs  Size  Descr*/
+#define VIRTIO_PCI_DEVICE_FEATURES 0x0   // 4  pre-configured by device 
+#define VIRTIO_PCI_GUEST_FEATURES  0x4   // 4  used by guest VM to communicate the features supported by VM
+#define VIRTIO_PCI_QUEUE_ADDR      0x8   // 4  
+#define VIRTIO_PCI_QUEUE_SIZE      0xC   // 2  
+#define VIRTIO_PCI_QUEUE_SELECT    0xE   // 2  
+#define VIRTIO_PCI_QUEUE_NOTIFY    0x10  // 2  
+#define VIRTIO_PCI_DEVICE_STATUS   0x12  // 1  current state of driver 
+#define VIRTIO_PCI_ISR_STATUS      0x13  // 1  
+
+/* ISR_STATUS Flags - sued to distinguish between device-specific 
+   configuration change interrupts and normal virtqueue interrupts*/
+#define ISR_STATUS_QUEUE_INT       0x1
+#define ISR_STATUS_DEVICE_CONF_INT 0x2
+
+/* The device MUST allow reading of any device-specific configuration field 
+ * before FEATURES_OK is set by the driver 
+*/
+
 /* Device status flags                       Offs */
 #define VIRTIO_PCI_STATUS_ACKNOWLEDGE        0x1   
 #define VIRTIO_PCI_STATUS_DRIVER             0x2   
@@ -93,94 +119,9 @@ typedef struct Virtqueue
 
 #define MAX_VIRTQUEUE_SIZE 32768
 
-typedef struct Virtio_pci_cap
-{
-    uint8_t cap_vndr; /* Generic PCI field: PCI_CAP_ID_VNDR */ 
-    uint8_t cap_next; /* Generic PCI field: next ptr. */ 
-    uint8_t cap_len; /* Generic PCI field: capability length */
-    uint8_t cfg_type;  /* Identifies the structure. */ 
-    uint8_t bar;  /* Where to find it. */ 
-    uint8_t id; /* Multiple capabilities of the same type */ 
-    uint8_t padding[2]; /* Pad to full dword. */ 
-    uint32_t offset;  /* Offset within bar. */ 
-    uint32_t length; /* Length of the structure, in bytes. */ 
-
-} virtio_pci_cap_t;
-
-typedef struct Virtio_pci_common_cfg 
-{ 
-    /* About the whole device. */ 
-    uint32_t device_feature_select;     /* read-write */ 
-    uint32_t device_feature;            /* read-only for driver */ 
-    uint32_t driver_feature_select;     /* read-write */ 
-    uint32_t driver_feature;            /* read-write */ 
-    uint16_t config_msix_vector;        /* read-write */ 
-    uint16_t num_queues;                /* read-only for driver */ 
-    uint8_t device_status;               /* read-write */ 
-    uint8_t config_generation;           /* read-only for driver */ 
-
-    /* About a specific virtqueue. */ 
-    uint16_t queue_select;              /* read-write */ 
-    uint16_t queue_size;                /* read-write */ 
-    uint16_t queue_msix_vector;         /* read-write */ 
-    uint16_t queue_enable;              /* read-write */ 
-    uint16_t queue_notify_off;          /* read-only for driver */ 
-    uint64_t queue_desc;                /* read-write */ 
-    uint64_t queue_driver;              /* read-write */ 
-    uint64_t queue_device;              /* read-write */ 
-    uint16_t queue_notify_data;         /* read-only for driver */ 
-    uint16_t queue_reset;               /* read-write */ 
-
-} virtio_pci_common_cfg_t;
-
-typedef struct Virtio_pci_notify_cap 
-{ 
-    virtio_pci_cap_t cap; 
-    uint32_t notify_off_multiplier; /* Multiplier for queue_notify_off. */ 
-
-} virtio_pci_notify_cap_t;
-
-typedef struct Virtio_pci_cfg_cap 
-{ 
-    virtio_pci_cap_t cap; 
-    uint8_t pci_cfg_data[4]; /* Data for BAR access. */ 
-
-} virtio_pci_cfg_cap_t;
-
-// Virtio_pci_cap cfg_type field values: 
-
-/* Common configuration */ 
-#define VIRTIO_PCI_CAP_COMMON_CFG        1 
-/* Notifications */ 
-#define VIRTIO_PCI_CAP_NOTIFY_CFG        2 
-/* ISR Status */ 
-#define VIRTIO_PCI_CAP_ISR_CFG           3 
-/* Device specific configuration */ 
-#define VIRTIO_PCI_CAP_DEVICE_CFG        4 
-/* PCI configuration access */ 
-#define VIRTIO_PCI_CAP_PCI_CFG           5 
-/* Shared memory region */ 
-#define VIRTIO_PCI_CAP_SHARED_MEMORY_CFG 8 
-/* Vendor-specific data */ 
-#define VIRTIO_PCI_CAP_VENDOR_CFG        9
-
-// Types from 1 to 5 are supported by driver
-#define VIRTIO_PCI_CAP_MIN 1
-#define VIRTIO_PCI_CAP_MAX 5
-
-#define VIRTIO_PCI_CAP_NUM 5
-
 typedef struct Virtio_dev
 {
     pci_dev_general_t pci_dev_general;
-
-    virtio_pci_cap_t caps[VIRTIO_PCI_CAP_NUM]; 
-
-    virtio_pci_common_cfg_t* common_cfg;
-    virtio_pci_notify_cap_t* notify_cap;
-    uint8_t* isr;
-    uint8_t* device_spec;
-    virtio_pci_cfg_cap_t* pci_access;
 
     unsigned queues_n;
     virtqueue_t* queues;
@@ -205,6 +146,14 @@ int virtio_dev_reset(virtio_dev_t* virtio_dev);
 int virtio_dev_negf(virtio_dev_t* virtio_dev, uint32_t requested_f);  
 int virtio_dev_fin_init(virtio_dev_t* virtio_dev);  
 
+uint8_t  virtio_read8 (const virtio_dev_t* virtio_dev, uint32_t offs);
+uint16_t virtio_read16(const virtio_dev_t* virtio_dev, uint32_t offs);
+uint32_t virtio_read32(const virtio_dev_t* virtio_dev, uint32_t offs);
+
+void virtio_write8 (const virtio_dev_t* virtio_dev, uint32_t offs, uint8_t  value);
+void virtio_write16(const virtio_dev_t* virtio_dev, uint32_t offs, uint16_t value);
+void virtio_write32(const virtio_dev_t* virtio_dev, uint32_t offs, uint32_t value);
+
 void virtio_set_dev_status_flag  (const virtio_dev_t* virtio_dev, uint8_t flag);
 bool virtio_check_dev_status_flag(const virtio_dev_t* virtio_dev, uint8_t flag);
 
@@ -212,6 +161,8 @@ int virtio_setup_virtqueue(virtqueue_t* virtqueue, uint16_t size, size_t chunk_s
 int virtio_setup_vring(vring_t* vring, uint16_t size);
 
 void dump_virtqueue(const virtqueue_t* virtqueue);
+
+int virtio_snd_buffers(virtio_dev_t* virtio_dev, unsigned qind, const buffer_info_t* buffer_info, unsigned buffers_num);
 
 #define ALIGN(x, qalign) (((x) + (qalign - 1)) & (~(qalign - 1))) 
 #define QALIGN PAGE_SIZE
