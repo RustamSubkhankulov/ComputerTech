@@ -11,64 +11,9 @@ OBJ_DIR = obj
 SRC_DIR = src
 INC_DIR = include
 
-USE_DEBUG_FLAGS = 0
-
-#==========================================================
-# SOURCE / OBJECT FILES LIST
-#==========================================================
-
-SRC_PATH = $(SRC_DIR)/$(1)/$(1).cpp
-
-MODULES = model view view_text view_graph controller main vector
-
-OBJ = $(foreach module, $(MODULES), $(OBJ_DIR)/$(module).o)
-SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))
-
-#==========================================================
-# TARGETS
-#==========================================================
-
-all: dir build #rmdep
-build: snake 
-
 #----------------------------------------------------------
 
-snake: $(OBJ)
-	$(CXX) $(^) -o $(@)
-
-define build_rule =
-$(OBJ_DIR)/$(1).o: $(call SRC_PATH,$(1)) 
-	$(CXX) $(call SRC_PATH,$(1)) -c -o $(OBJ_DIR)/$(1).o $(DEBUG_FLAGS) $(CXXFLAGS)
-endef
-
--include depends
-
-$(foreach module, $(MODULES), $(eval $(call build_rule,$(module))))
-
-#==========================================================
-# .PHONY TARGETS
-#==========================================================
-
-.PHONY: dir mkdep clean rmdep
-
-dir:
-	@ mkdir -p $(OBJ_DIR)
-
-clean:
-	- rm $(OBJ_DIR)/*.o 
-	- rm snake
-
-#==========================================================
-# DEPENDENCIES
-#==========================================================
-
-mkdep: $(SRC)
-	$(CXX) -MM $(SRC) -o depends
-
-rmdep:
-	-rm depends
-
-#==========================================================
+USE_DEBUG_FLAGS = 0
 
 ifeq ($(USE_DEBUG_FLAGS), 1)
 
@@ -107,6 +52,64 @@ ifeq ($(USE_DEBUG_FLAGS), 1)
 
 else
 
-	FLAGS =
+	DEBUG_FLAGS =
 
 endif
+
+#==========================================================
+# SOURCE / OBJECT FILES LIST
+#==========================================================
+
+SRC_PATH = $(SRC_DIR)/$(1)/$(1).cpp
+
+MODULES = model view view_text view_graph controller main vector
+
+OBJ = $(foreach module, $(MODULES), $(OBJ_DIR)/$(module).o)
+SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))
+
+#==========================================================
+# TARGETS
+#==========================================================
+
+all: dir mkdep build rmdep
+build: snake 
+
+#----------------------------------------------------------
+
+snake: $(OBJ)
+	$(CXX) $(^) -o $(@)
+
+define build_rule =
+$(OBJ_DIR)/$(1).o: $(call SRC_PATH,$(1)) 
+	$(CXX) $(call SRC_PATH,$(1)) -c -o $(OBJ_DIR)/$(1).o $(DEBUG_FLAGS) $(CXXFLAGS)
+endef
+
+-include depends
+
+$(foreach module, $(MODULES), $(eval $(call build_rule,$(module))))
+
+#==========================================================
+# .PHONY TARGETS
+#==========================================================
+
+.PHONY: dir mkdep clean rmdep
+
+dir:
+	@ mkdir -p $(OBJ_DIR)
+
+clean:
+	-@ rm $(OBJ_DIR)/*.o 
+	-@ rm snake
+
+#==========================================================
+# DEPENDENCIES
+#==========================================================
+
+mkdep: $(SRC)
+	@ $(CXX) -MM $(SRC) -o depends
+
+rmdep:
+	-@ rm depends
+
+#==========================================================
+
