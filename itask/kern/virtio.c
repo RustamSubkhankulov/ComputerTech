@@ -8,6 +8,9 @@
 #include <inc/string.h>
 #include <kern/picirq.h>
 
+extern void
+map_addr_early_boot(uintptr_t va, uintptr_t pa, size_t sz);
+
 static int virtio_dev_read_pci_cap_list(virtio_dev_t* virtio_dev);
 static int virtio_dev_prepare_dev_conf(virtio_dev_t* virtio_dev);
 static void* get_addr_by_capability(virtio_dev_t* virtio_dev, const virtio_pci_cap_t* cap);
@@ -102,6 +105,8 @@ static void* get_addr_by_capability(virtio_dev_t* virtio_dev, const virtio_pci_c
     uint32_t* BARs = (uint32_t*) &(virtio_dev->pci_dev_general.BAR);
     uint8_t barn = cap->bar;
 
+    void* res = NULL;
+
     cprintf("CONVERTING barToAdrdr: barn %d BARs[barn] == %u \n", barn, BARs[barn]);
 
     if ((BARs[barn] & MS_BAR_ALWAYS0) == 0)
@@ -111,28 +116,25 @@ static void* get_addr_by_capability(virtio_dev_t* virtio_dev, const virtio_pci_c
             void* bar_addr = (void*) ((uint64_t) (BARs[barn] & 0xFFFFFFF0) + ((uint64_t) (BARs[barn + 1] & 0xFFFFFFFF) << 32));
             cprintf("64bit memory bar_addr %p \n", bar_addr);
 
-            return (void*) ((char*) bar_addr + cap->offset);
+            res = (void*) ((char*) bar_addr + cap->offset);
         }
         else if ((BARs[barn] & MS_BAR_TYPE) == MS_BAR_TYPE_32)
         {
             void* bar_addr = (void*) (uint64_t) (BARs[barn] & 0xFFFFFFF0);
             cprintf("32bit memory bar_addr %p \n", bar_addr);
 
-            return (void*) ((char*) bar_addr + cap->offset);
+            res = (void*) ((char*) bar_addr + cap->offset);
         }
         else 
-        {
             cprintf("reserved \n");
-            return NULL;
-        }
     }
     else 
-    {
         cprintf("virtio: I/O Space BAR isn't supported \n");
-        return NULL;
-    }
 
-    return NULL;
+    if (res != NULL)
+        map_addr_early_boot((uintptr_t) res, (uintptr_t) res, cap->length);
+
+    return res;
 }
 
 
@@ -195,7 +197,7 @@ void virtio_set_dev_status_flag(const virtio_dev_t* virtio_dev, uint8_t flag)
 {
     assert(virtio_dev != NULL);
 
-    // TODO
+    virtio_dev->common_cfg->device_status |= flag;
 
     return;
 }
