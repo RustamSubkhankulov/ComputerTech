@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <poll.h>
 
 //---------------------------------------------------------
 
@@ -27,6 +28,10 @@ static const int CSI_underline_on = 21;
 static const int CSI_bold_off      = 22;
 static const int CSI_blink_off     = 25;
 static const int CSI_underline_off = 24;
+
+//---------------------------------------------------------
+
+static const int Poll_timeout_ms = 100;
 
 //---------------------------------------------------------
 
@@ -170,12 +175,9 @@ void View_text::run_loop()
             draw_rabbits(model);
         }
 
-        for (auto func : subs_on_key)
-        {
-            func(0);
-        }
+        poll_events();
 
-        usleep(1000000);
+        usleep(100000);
     }
 }
 
@@ -183,9 +185,37 @@ void View_text::run_loop()
 
 void View_text::poll_events()
 {
-    // TODO: poll & read => implement human controller + snake start position
+    poll_on_key();
+}
 
+//---------------------------------------------------------
 
+void View_text::poll_on_key()
+{
+    struct pollfd req = {.fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
+
+    int err = poll(&req, 1, Poll_timeout_ms);
+    if (err == -1)
+    {
+        fprintf(stderr, "poll() failed: %s \n", strerror(errno));
+        assert(false);
+    }
+
+    if (req.revents & POLL_IN)
+    {
+        char sym = 0;
+        err = read(STDIN_FILENO, &sym, 1);
+        if (err == -1)
+        {
+            fprintf(stderr, "read() failed: %s \n", strerror(errno));
+            assert(false);
+        }
+
+        for (auto func : subs_on_key)
+        {
+            func((int) sym);
+        }
+    }
 }
 
 //---------------------------------------------------------

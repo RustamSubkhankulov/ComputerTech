@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
+#include <iostream>
 
 //---------------------------------------------------------
 
@@ -118,12 +119,22 @@ void Snake::update(const Vector& field_size)
     Coords dir{};
     Coords new_head{};
 
-again:
-
-    dir = get_rand_dir();
-
-    if (!(dir.x() == 0 || dir.y() == 0))
-        goto again;
+    if (direction_ == Snake_dir::DOWN)
+    {
+        dir = {0, 1};
+    }
+    else if (direction_ == Snake_dir::RIGHT)
+    {   
+        dir = {1, 0};
+    }
+    else if (direction_ == Snake_dir::UP)
+    {
+        dir = {0, -1};
+    }
+    else if (direction_ == Snake_dir::LEFT)
+    {
+        dir = {-1, 0};
+    }
 
     if ((head.x() == 0 && dir.x() == -1)
         || head.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
@@ -134,14 +145,14 @@ again:
         dir.set_y(0);
 
     if (dir.x() == 0 && dir.y() == 0)
-        goto again;
+        assert(false);
 
     new_head = head + dir;
     
     for (const Coords& coords : coords_list_)
     {
         if (coords.x() == new_head.x() && coords.y() == new_head.y())
-            goto again;
+            assert(false);
     }
 
     coords_list_.pop_front();
@@ -187,6 +198,54 @@ void Model::generate_rabbits(const Vector& field_size, const int rnum)
 
 //---------------------------------------------------------
 
+void Snake::turn_left()
+{
+    if (direction_ == Snake_dir::DOWN)
+    {
+        direction_ = Snake_dir::RIGHT;
+    }
+    else if (direction_ == Snake_dir::RIGHT)
+    {   
+        direction_ = Snake_dir::UP;
+    }
+    else if (direction_ == Snake_dir::UP)
+    {
+        direction_ = Snake_dir::LEFT;
+    }
+    else if (direction_ == Snake_dir::LEFT)
+    {
+        direction_ = Snake_dir::DOWN;
+    }
+
+    return;
+}
+
+//---------------------------------------------------------
+
+void Snake::turn_right()
+{
+    if (direction_ == Snake_dir::DOWN)
+    {
+        direction_ = Snake_dir::LEFT;
+    }
+    else if (direction_ == Snake_dir::RIGHT)
+    {   
+        direction_ = Snake_dir::DOWN;
+    }
+    else if (direction_ == Snake_dir::UP)
+    {
+        direction_ = Snake_dir::RIGHT;
+    }
+    else if (direction_ == Snake_dir::LEFT)
+    {
+        direction_ = Snake_dir::UP;
+    }
+
+    return;
+}
+
+//---------------------------------------------------------
+
 void Model::generate_snake(const Vector& field_size, Snake_controller* controller)
 {
     assert(controller);
@@ -194,8 +253,8 @@ void Model::generate_snake(const Vector& field_size, Snake_controller* controlle
     Snake snake = get_rand_coords_list(field_size, Snake::Snake_len);
 
     controller->set_model(this);
-    controller->set_snake(&snake);
-
     snakes.push_back(snake);
+    controller->set_snake(&snakes.back());
+
     return;
 }

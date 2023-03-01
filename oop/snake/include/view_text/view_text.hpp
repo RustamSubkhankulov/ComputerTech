@@ -38,9 +38,9 @@ class View_text: public View
         View_text():
             wnsz_(get_winsize())
             {
-                // set_sighandler();
-                // turn_off_carriage();
-                // termios_change_conf();
+                set_sighandler();
+                turn_off_carriage();
+                termios_change_conf();
             }
 
         View_text            (const View_text& that) = default;
@@ -62,6 +62,7 @@ class View_text: public View
     private:
 
         void poll_events();
+        void poll_on_key();
 
         Vector get_winsize_real() const;
         void draw_frame();

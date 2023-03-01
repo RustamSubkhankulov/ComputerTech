@@ -58,6 +58,13 @@ class Snake
 {
     Coords_list coords_list_{};
 
+    enum class Snake_dir
+    {
+        UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4
+    };
+
+    Snake_dir direction_ = Snake_dir::RIGHT;
+
     public:
 
         static constexpr int Snake_len = 7;
@@ -88,6 +95,9 @@ class Snake
         }
 
         void update(const Coords& field_size);
+
+        void turn_left();
+        void turn_right();
 };
 
 //---------------------------------------------------------
