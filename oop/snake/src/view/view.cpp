@@ -16,18 +16,20 @@ View* View::get_view(const std::string& what)
 {
     if (current != nullptr)
     {
-        if (!what.empty())
+        if (!(what.empty()))
             return nullptr;
 
         return current;
     }
 
     if (what == "text")
-        return new View_text;
+        current = new View_text;
     else if (what == "graph")
-        return new View_graph;
+        current = new View_graph;
     else 
-        return nullptr;
+        current = nullptr;
+
+    return current;
 }
 
 

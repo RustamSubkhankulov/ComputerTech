@@ -18,7 +18,7 @@ class View
     protected: // ctor is private, all derivated class are not accessible for users (outside of view.cpp)
 
         View() { return; };
-        std::list<std::function<void(int)>> subs_on_key { 0 };
+        std::list<std::function<void(int)>> subs_on_key {};
 
     public:
 

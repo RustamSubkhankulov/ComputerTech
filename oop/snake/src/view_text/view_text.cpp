@@ -170,6 +170,11 @@ void View_text::run_loop()
             draw_rabbits(model);
         }
 
+        for (auto func : subs_on_key)
+        {
+            func(0);
+        }
+
         usleep(1000000);
     }
 }

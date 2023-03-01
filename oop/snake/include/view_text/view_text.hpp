@@ -38,9 +38,9 @@ class View_text: public View
         View_text():
             wnsz_(get_winsize())
             {
-                set_sighandler();
-                turn_off_carriage();
-                termios_change_conf();
+                // set_sighandler();
+                // turn_off_carriage();
+                // termios_change_conf();
             }
 
         View_text            (const View_text& that) = default;

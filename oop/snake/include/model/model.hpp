@@ -92,7 +92,7 @@ class Snake
 
 //---------------------------------------------------------
 
-class Controller;
+class Snake_controller;
 
 class Model
 {

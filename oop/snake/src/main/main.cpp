@@ -20,8 +20,10 @@ int main(void)
     Model model{};
     Vector field_size = view->get_winsize();
 
-    model.generate_snakes(field_size, 1);  // 1 snake
-    model.generate_rabbits(field_size, 10); // 3 rabbits
+    Snake_controller_human human_ctrl {};
+
+    model.generate_snake(field_size, &human_ctrl);
+    model.generate_rabbits(field_size, 10);
 
     view->set_model(&model);
     view->run_loop();

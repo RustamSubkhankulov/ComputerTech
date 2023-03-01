@@ -5,6 +5,7 @@
 //---------------------------------------------------------
 
 #include "../../include/model/model.hpp"
+#include "../../include/view/view.hpp"
 #include "../../include/controller/controller.hpp"
 
 //=========================================================

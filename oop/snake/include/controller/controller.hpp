@@ -2,11 +2,13 @@
 
 //=========================================================
 
+#include <functional>
 #include <assert.h>
 
 //---------------------------------------------------------
 
 #include "../model/model.hpp"
+#include "../view/view.hpp"
 
 //=========================================================
 
@@ -64,7 +66,7 @@ class Snake_controller: public Subscriber_on_key
 
         Model* get_model() { return model_; }
 
-        virtual void on_key(int key) = 0;
+        virtual void on_key(int key) { return; };
 };
 
 //---------------------------------------------------------
@@ -73,12 +75,17 @@ class Snake_controller_AI: public Snake_controller
 {
     public:
 
-        Snake_controller_AI() { return; }
+        Snake_controller_AI() 
+        {
+            View* view = View::get_view();
+            view->set_on_key(std::bind(&Snake_controller_AI::on_key, this, std::placeholders::_1));
+        }
 
         Snake_controller_AI(Snake* snake, Model* model):
         Snake_controller(snake, model)
         {
-            return;
+            View* view = View::get_view();
+            view->set_on_key(std::bind(&Snake_controller_AI::on_key, this, std::placeholders::_1));
         }
 
         void on_key(int key) override;
@@ -90,12 +97,17 @@ class Snake_controller_human: public Snake_controller
 {
     public:
 
-        Snake_controller_human() { return; }
+        Snake_controller_human()
+        {
+            View* view = View::get_view();
+            view->set_on_key(std::bind(&Snake_controller_human::on_key, this, std::placeholders::_1));
+        }
 
         Snake_controller_human(Snake* snake, Model* model):
         Snake_controller(snake, model)
         {
-            return;
+            View* view = View::get_view();
+            view->set_on_key(std::bind(&Snake_controller_human::on_key, this, std::placeholders::_1));
         }
 
         void on_key(int key) override;
