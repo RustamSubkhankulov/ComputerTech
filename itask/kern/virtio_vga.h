@@ -28,9 +28,31 @@ const static enum Pci_display_controller_subclass
 const static uint16_t Virtio_vga_device_id     = 0x10;
 const static uint16_t Virtio_vga_pci_device_id = 0x1040 + Virtio_vga_device_id;
 
+#define VIRTIO_GPU_F_VIRGL         0 // virgl 3D mode is supported.
+#define VIRTIO_GPU_F_EDID          1 // EDID is supported.
+#define VIRTIO_GPU_F_RESOURCE_UUID 2 // assigning resources UUIDs for export to other virtio devices is supported.
+#define VIRTIO_GPU_F_RESOURCE_BLOB 3 // creating and using size-based blob resources is supported.
+#define VIRTIO_GPU_F_CONTEXT_INIT  4 //multiple context types and synchronization timelines supported. Requires VIRTIO_GPU_F_VIRGL.
+
+#define VIRTIO_GPU_EVENT_DISPLAY (1 << 0) 
+
+/* Virtqueues indexes */
+#define CONTROLQ 0
+#define CURSORQ  1
+
+typedef struct virtio_gpu_config 
+{ 
+    uint32_t events_read; 
+    uint32_t events_clear; 
+    uint32_t num_scanouts; 
+    uint32_t num_capsets; 
+
+} virtio_gpu_config_t;
+
 typedef struct Virtio_vga_dev
 {
     virtio_dev_t virtio_dev;
+    virtio_gpu_config_t* gpu_conf;
 
 } virtio_vga_dev_t;
 

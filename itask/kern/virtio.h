@@ -45,7 +45,7 @@ typedef struct Vring_avail
     uint16_t flags;
 	uint16_t idx;
 	volatile uint16_t ring[];
-    /* uint16_t used_event; Only if VIRTIO_F_EVENT_IDX */ 
+    // uint16_t used_event; // Only if VIRTIO_F_EVENT_IDX
 
 } vring_avail_t;
 
@@ -63,6 +63,7 @@ typedef struct Vring_used
     uint16_t flags;
 	uint16_t idx;
 	volatile vring_used_elem_t ring[];
+    // uint16_t avail_event; // Only if VIRTIO_F_EVENT_IDX
 
 } vring_used_t;
 
@@ -125,9 +126,9 @@ typedef struct Virtio_pci_common_cfg
     uint16_t queue_msix_vector;         /* read-write */ 
     uint16_t queue_enable;              /* read-write */ 
     uint16_t queue_notify_off;          /* read-only for driver */ 
-    uint64_t queue_desc;                /* read-write */ 
-    uint64_t queue_driver;              /* read-write */ 
-    uint64_t queue_device;              /* read-write */ 
+    uint64_t queue_desc;                /* read-write WARNING: must not be read directly*/ 
+    uint64_t queue_driver;              /* read-write WARNING: must not be read directly*/ 
+    uint64_t queue_device;              /* read-write WARNING: must not be read directly*/ 
     uint16_t queue_notify_data;         /* read-only for driver */ 
     uint16_t queue_reset;               /* read-write */ 
 
@@ -176,16 +177,15 @@ typedef struct Virtio_dev
 
     virtio_pci_cap_t caps[VIRTIO_PCI_CAP_NUM]; 
 
-    virtio_pci_common_cfg_t* common_cfg;
-    virtio_pci_notify_cap_t* notify_cap;
-    uint8_t* isr;
-    uint8_t* device_spec;
-    virtio_pci_cfg_cap_t* pci_access;
+    volatile virtio_pci_common_cfg_t* common_cfg;
+    volatile virtio_pci_notify_cap_t* notify_cap;
+    volatile uint8_t* isr;
+    volatile virtio_pci_cfg_cap_t* pci_access;
 
     unsigned queues_n;
     virtqueue_t* queues;
     
-    uint32_t features; // features supported by both device & driver
+    uint64_t features; // features supported by both device & driver
 
 } virtio_dev_t;
 
@@ -200,21 +200,55 @@ typedef struct Buffer_info
 
 } buffer_info_t;
 
+/* Reserved Feature Bits */
+#define VIRTIO_F_RING_INDIRECT_DESC 28 // Negotiating this feature indicates that the driver can use descriptors with the VIRTQ_DESC_F_INDIRECT flag set
+#define VIRTIO_F_EVENT_IDX          29 // This feature enables the used_event and the avail_event fields
+#define VIRTIO_F_VERSION_1          32 // This indicates compliance with this specification, giving a simple way to detect legacy devices or drivers.
+#define VIRTIO_F_ACCESS_PLATFORM    33 // This feature indicates that the device can be used on a platform where device access to data in memory is limited and/or translated
+#define VIRTIO_F_RING_PACKED        34 // This feature indicates support for the packed virtqueue layout 
+#define VIRTIO_F_IN_ORDER           35 // This feature indicates that all buffers are used by the device in the same order in which they have been made available.
+#define VIRTIO_F_ORDER_PLATFORM     36 // This feature indicates that memory accesses by the driver and the device are ordered in a way described by the platform.
+#define VIRTIO_F_SR_IOV             37 // This feature indicates that the device supports Single Root I/O Virtualization
+#define VIRTIO_F_NOTIFICATION_DATA  38 // This feature indicates that the driver passes extra data (besides identifying the virtqueue) in its device notifications. 
+#define VIRTIO_F_NOTIF_CONFIG_DATA  39 // This feature indicates that the driver uses the data provided by the device as a virtqueue identifier in available buffer notifications.
+#define VIRTIO_F_RING_RESET         40 // This feature indicates that the driver can reset a queue individually
+
 int virtio_dev_init(virtio_dev_t* virtio_dev);
 int virtio_dev_reset(virtio_dev_t* virtio_dev);
-int virtio_dev_negf(virtio_dev_t* virtio_dev, uint32_t requested_f);  
+int virtio_dev_negf(virtio_dev_t* virtio_dev, uint64_t requested);  
 int virtio_dev_fin_init(virtio_dev_t* virtio_dev);  
 
-void virtio_set_dev_status_flag  (const virtio_dev_t* virtio_dev, uint8_t flag);
-bool virtio_check_dev_status_flag(const virtio_dev_t* virtio_dev, uint8_t flag);
+uint64_t virtio_dev_get_queue_desc(virtio_dev_t* virtio_dev);
+uint64_t virtio_dev_get_queue_driver(virtio_dev_t* virtio_dev);
+uint64_t virtio_dev_get_queue_device(virtio_dev_t* virtio_dev);
 
+void* get_addr_by_capability(virtio_dev_t* virtio_dev, const virtio_pci_cap_t* cap);
+
+int virtio_setup_virtqueues(virtio_dev_t* virtio_dev, size_t chunk_size);
 int virtio_setup_virtqueue(virtqueue_t* virtqueue, uint16_t size, size_t chunk_size);
 int virtio_setup_vring(vring_t* vring, uint16_t size);
 
 void dump_virtqueue(const virtqueue_t* virtqueue);
 
+int virtio_snd_buffers(virtio_dev_t* virtio_dev, unsigned qind, const buffer_info_t* buffer_info, unsigned buffers_num);
+
+int virtio_send_avail_notif(virtio_dev_t* virtio_dev, uint16_t qind);
+
 #define ALIGN(x, qalign) (((x) + (qalign - 1)) & (~(qalign - 1))) 
 #define QALIGN PAGE_SIZE
+
+static inline void virtio_set_dev_status_flag(const virtio_dev_t* virtio_dev, uint8_t flag)
+{
+    assert(virtio_dev != NULL);
+    virtio_dev->common_cfg->device_status |= flag;
+    return;
+}
+
+static inline bool virtio_check_dev_status_flag(const virtio_dev_t* virtio_dev, uint8_t flag)
+{
+    assert(virtio_dev != NULL);
+    return (virtio_dev->common_cfg->device_status & flag);
+}
 
 static inline size_t vring_calc_size(uint16_t size)
 {
@@ -228,7 +262,7 @@ static inline void virtq_used_notif_disable(virtqueue_t* virtqueue)
     virtqueue->vring.avail->flags = 1; // spec: If flags is 1, the device SHOULD NOT send a notification
 }
 
-static inline void virtq_used_notif_enable (virtqueue_t* virtqueue)
+static inline void virtq_used_notif_enable(virtqueue_t* virtqueue)
 {
     assert(virtqueue);
     virtqueue->vring.avail->flags = 0; // spec: If flags is 0, the device MUST send a notification

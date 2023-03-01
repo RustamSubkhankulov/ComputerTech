@@ -670,7 +670,7 @@ detect_memory(void) {
                        && "NumberOfPages must not be any value that would represent a memory page \
                        with a start address, either physical or virtual, above 0xFFFFFFFFFFFFF000");
 
-            if (start_r->PhysicalStart < IOPHYSMEM || start_r->PhysicalStart + memory_range_size > PADDR(end))
+            if (start_r->PhysicalStart < IOPHYSMEM || start_r->PhysicalStart + memory_range_size >= PADDR(end))
             {
                 // cprintf("detect_memory() address is not in range, skip \n");
 

@@ -10,6 +10,9 @@
 static virtio_vga_dev_t Virtio_vga_dev = { 0 };
 
 static int virtio_vga_device_specific_setup();
+static int virtio_vga_map_gpu_conf();
+
+// TODOITASK int handler
 
 void init_virtio_vga(void)
 {
@@ -68,8 +71,8 @@ void init_virtio_vga(void)
 
     // 3) Negotiate features
 
-    uint32_t requested_f = 0;
-    err = virtio_dev_negf(VIRTIO_VGA_DEV_TO_VIRTIO_DEV(&Virtio_vga_dev), requested_f);
+    uint32_t requested = 0;
+    err = virtio_dev_negf(VIRTIO_VGA_DEV_TO_VIRTIO_DEV(&Virtio_vga_dev), requested);
     if (err != 0)
     {
         cprintf("virtio-vga: features negotiating failed \n");
@@ -106,7 +109,44 @@ panic:
 
 }
 
+static int virtio_vga_map_gpu_conf()
+{
+    Virtio_vga_dev.gpu_conf = (virtio_gpu_config_t*) get_addr_by_capability(&Virtio_vga_dev.virtio_dev, 
+                                                                             Virtio_vga_dev.virtio_dev.caps + VIRTIO_PCI_CAP_DEVICE_CFG - 1);
+    if (Virtio_vga_dev.gpu_conf == NULL) return -1;
+
+    if (trace_gpu)
+        cprintf("virtio-vga: virtio_gpu_config addr is %p \n", (void*) Virtio_vga_dev.gpu_conf);
+
+    return 0;
+}
+
+// Perform device-specific setup, including discovery of virtqueues for the device, 
+// optional per-bus setup, reading and possibly writing the device’s virtio configuration space, 
+// and population of virtqueues.
+
 static int virtio_vga_device_specific_setup()
 {
+    if (trace_gpu)
+        cprintf("virtio-vga: performing device specific initialization. \n");
+
+    int err = 0;
+
+    err = virtio_vga_map_gpu_conf();
+    if (err < 0)
+    {
+        cprintf("virtio-vga: failed to read device specific configuration \n");
+        return err;
+    }
+
+    err = virtio_setup_virtqueues(&Virtio_vga_dev.virtio_dev, PAGE_SIZE); // TODOITASK
+    if (err < 0)
+    {
+        cprintf("virtio_vga: failed to setup virtqueues \n");
+        return err;
+    }
+
+    if (trace_gpu)
+        cprintf("virtio-vga: device specific initialization successfully finished. \n");
     return 0;
 }
