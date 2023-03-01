@@ -6,9 +6,9 @@
 
 //=========================================================
 
-void View_graph::draw()  
+void View_graph::run_loop()  
 {
-    std::cout << "View_graph::draw called()" << std::endl;
+    std::cout << "View_graph::run_loop called()" << std::endl;
 }
 
 //---------------------------------------------------------

@@ -24,9 +24,7 @@ int main(void)
     model.generate_rabbits(field_size, 10); // 3 rabbits
 
     view->set_model(&model);
-
-    while(1)
-        view->draw();
+    view->run_loop();
 
     return 0;
 }

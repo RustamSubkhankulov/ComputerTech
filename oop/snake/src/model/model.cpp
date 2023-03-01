@@ -5,6 +5,7 @@
 //---------------------------------------------------------
 
 #include "../../include/model/model.hpp"
+#include "../../include/controller/controller.hpp"
 
 //=========================================================
 
@@ -12,7 +13,7 @@ using std::rand;
 
 //=========================================================
 
-// TODO overlapping objects
+// TODO start snake pos
 
 static int get_rand_offs()
 {
@@ -185,11 +186,15 @@ void Model::generate_rabbits(const Vector& field_size, const int rnum)
 
 //---------------------------------------------------------
 
-void Model::generate_snakes(const Vector& field_size, const int snum) // TODO overlapping snakes
+void Model::generate_snake(const Vector& field_size, Snake_controller* controller)
 {
-    for (unsigned iter = 0; iter < snum; iter++)
-    {
-        Snake cur = get_rand_coords_list(field_size, Snake::Snake_len);
-        snakes.push_back(cur);
-    }
+    assert(controller);
+
+    Snake snake = get_rand_coords_list(field_size, Snake::Snake_len);
+
+    controller->set_model(this);
+    controller->set_snake(&snake);
+
+    snakes.push_back(snake);
+    return;
 }

@@ -19,5 +19,5 @@ class View_graph: public View
 
         Vector get_winsize() const override;
 
-        void draw() override;
+        void run_loop() override;
 };

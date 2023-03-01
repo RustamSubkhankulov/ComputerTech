@@ -46,6 +46,40 @@ static void sighandler(int signum);
 
 //=========================================================
 
+void View_text::termios_change_conf()
+{
+    int err = tcgetattr(STDIN_FILENO, &(this->termis_attr));
+    if (err != 0)
+    {
+        fprintf(stderr, "tcgetattr() failed: %s \n", strerror(errno));
+        assert(false);
+    }
+
+    struct termios attr_raw = this->termis_attr;
+    cfmakeraw(&attr_raw);
+
+    err = tcsetattr(STDIN_FILENO, TCSANOW, &attr_raw);
+    if (err != 0)
+    {
+        fprintf(stderr, "tcsetattr() failed: %s \n", strerror(errno));
+        assert(false);
+    }
+}
+
+//---------------------------------------------------------
+
+void View_text::termios_restore_conf()
+{
+    int err = tcsetattr(STDIN_FILENO, TCSANOW, &(this->termis_attr));
+    if (err != 0)
+    {
+        fprintf(stderr, "tcsetattr() failed: %s \n", strerror(errno));
+        assert(false);
+    }
+}
+
+//---------------------------------------------------------
+
 void View_text::reset_attr()
 {
     printf("\e[0m");
@@ -120,20 +154,33 @@ static void sighandler(int signum)
 
 //---------------------------------------------------------
 
-void View_text::draw()
+void View_text::run_loop()
 {    
-    cls();
-    draw_frame();
 
-    Model* model = get_model();
-    if (model != nullptr);
+    while (1)
     {
-        model->update(get_winsize());
-        draw_snakes(model);
-        draw_rabbits(model);
-    }
+        cls();
+        draw_frame();
 
-    usleep(500000);
+        Model* model = get_model();
+        if (model != nullptr);
+        {
+            model->update(get_winsize());
+            draw_snakes(model);
+            draw_rabbits(model);
+        }
+
+        usleep(1000000);
+    }
+}
+
+//---------------------------------------------------------
+
+void View_text::poll_events()
+{
+    // TODO: poll & read => implement human controller + snake start position
+
+
 }
 
 //---------------------------------------------------------

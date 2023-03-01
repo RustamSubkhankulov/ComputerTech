@@ -92,6 +92,8 @@ class Snake
 
 //---------------------------------------------------------
 
+class Controller;
+
 class Model
 {
     public:
@@ -106,5 +108,5 @@ class Model
 
         void update(const Coords& field_size);
         void generate_rabbits(const Coords& field_size, const int rnum);
-        void generate_snakes (const Coords& field_size, const int snum);
+        void generate_snake(const Coords& field_size, Snake_controller* controller);
 };

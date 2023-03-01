@@ -8,6 +8,8 @@
 //---------------------------------------------------------
 
 #include <string>
+#include <list>
+#include <functional>
 
 //=========================================================
 
@@ -16,6 +18,7 @@ class View
     protected: // ctor is private, all derivated class are not accessible for users (outside of view.cpp)
 
         View() { return; };
+        std::list<std::function<void(int)>> subs_on_key { 0 };
 
     public:
 
@@ -23,7 +26,7 @@ class View
         static View* get_view(const std::string& what = std::string());
 
         virtual Vector get_winsize() const = 0;
-        virtual void draw()  = 0;
+        virtual void run_loop()  = 0;
 
         Model* set_model(Model* model)
         {
@@ -33,6 +36,12 @@ class View
         }
         
         Model* get_model() { return model_; }
+
+        void set_on_key(std::function<void(int)> callback)
+        {
+            subs_on_key.push_back(callback);
+            return;
+        }
 
         virtual ~View() { return; };
 
