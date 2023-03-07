@@ -18,7 +18,7 @@
 #endif
 
 #ifndef trace_memory_more
-#define trace_memory_more 1
+#define trace_memory_more 0
 #endif
 
 #if LAB == 9 || LAB == 8
@@ -60,12 +60,8 @@
 #endif 
 #endif 
 
-#ifndef trace_gpu
-#define trace_gpu 1
-#endif 
-
-#ifndef trace_virtio
-#define trace_virtio 1
+#ifndef trace_vga
+#define trace_vga 1
 #endif 
 
 #endif

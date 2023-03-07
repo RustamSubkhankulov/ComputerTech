@@ -1,30 +1,18 @@
 {
     "files.associations": {
-        "array": "c",
-        "*.tcc": "c",
-        "cmath": "c",
-        "complex": "c",
-        "deque": "c",
-        "string": "c",
-        "unordered_map": "c",
-        "vector": "c",
-        "exception": "c",
-        "functional": "c",
-        "string_view": "c",
-        "memory": "c",
         "random": "c",
-        "initializer_list": "c",
-        "istream": "c",
-        "numeric": "c",
-        "ostream": "c",
-        "sstream": "c",
-        "streambuf": "c",
-        "system_error": "c",
-        "mmu.h": "c",
-        "assert.h": "c",
-        "x86.h": "c",
+        "string_view": "c",
+        "set": "c",
+        "compare": "cpp",
+        "cstddef": "cpp",
+        "type_traits": "cpp",
+        "cmath": "cpp",
+        "limits": "cpp",
+        "utility": "cpp",
+        "traceopt.h": "c",
         "string.h": "c",
-        "error.h": "c",
-        "uefi.h": "c"
-    }
+        "assert.h": "c",
+        "x86.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

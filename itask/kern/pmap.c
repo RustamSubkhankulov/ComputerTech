@@ -600,7 +600,7 @@ found:
     }    
     
     // cprintf("BEFORE ASSERT page2pa(new) %lx PADDR(end) %lx CLASS_MASK\n", page2pa(new), PADDR(end));
-    assert(page2pa(new) <= PADDR(end) && page2pa(new) + CLASS_SIZE(new->class) > IOPHYSMEM);
+    assert((page2pa(new) >= PADDR(end) || page2pa(new) + CLASS_MASK(new->class) < IOPHYSMEM));
 
     return new;
 }
@@ -664,15 +664,16 @@ detect_memory(void) {
             assert((start_r->PhysicalStart % PAGE_SIZE) == 0 && "PhysicalStart must be aligned on a 4KiB boundary");
             assert((start_r->NumberOfPages)                  && "NumberOfPages must not be 0");
 
-            uint64_t memory_range_size = start_r->NumberOfPages * PAGE_SIZE;
+            uint64_t mem_size = start_r->NumberOfPages * PAGE_SIZE;
 
-            assert((start_r->PhysicalStart + memory_range_size <= 0xFFFFFFFFFFFFF000) 
+            assert((start_r->PhysicalStart + mem_size <= 0xFFFFFFFFFFFFF000) 
                        && "NumberOfPages must not be any value that would represent a memory page \
                        with a start address, either physical or virtual, above 0xFFFFFFFFFFFFF000");
 
-            if (start_r->PhysicalStart < IOPHYSMEM || start_r->PhysicalStart + memory_range_size >= PADDR(end))
+            if (!(start_r->PhysicalStart < IOPHYSMEM || start_r->PhysicalStart + mem_size > PADDR(end)))
             {
-                // cprintf("detect_memory() address is not in range, skip \n");
+                if (trace_memory_more)
+                    cprintf("detect_memory() address is not in range, skip \n");
 
                 start_r = (void *)((uint8_t *)start_r + uefi_lp->MemoryMapDescriptorSize);
                 continue;
@@ -680,7 +681,7 @@ detect_memory(void) {
 
             // cprintf("attaching memory region: PhysStart ") ??
 
-            attach_region(start_r->PhysicalStart, start_r->PhysicalStart + memory_range_size, type);
+            attach_region(start_r->PhysicalStart, start_r->PhysicalStart + mem_size, type);
 
             // next iteration
             start_r = (void *)((uint8_t *)start_r + uefi_lp->MemoryMapDescriptorSize);

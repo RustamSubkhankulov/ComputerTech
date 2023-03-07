@@ -18,7 +18,6 @@ static struct Taskstate ts;
 
 extern void clock_thdlr(void);
 extern void timer_thdlr(void);
-extern void virtio_thdlr(void);
 
 /* For debugging, so print_trapframe can distinguish between printing
  * a saved trapframe and printing the current trapframe and print some
@@ -108,12 +107,6 @@ trap_init(void) {
 
     /* Per-CPU setup */
     trap_init_percpu();
-}
-
-void virtio_idt_init(void)
-{
-    idt[IRQ_OFFSET + IRQ_VIRTIO] = GATE(0, GD_KT, (uint64_t) (&virtio_thdlr), 0);
-    return;
 }
 
 void clock_idt_init(void)

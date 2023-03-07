@@ -12,13 +12,13 @@
 #include <kern/pmap.h>
 #include <kern/env.h>
 #include <kern/timer.h>
-#include <kern/virtio_vga.h>
 #include <kern/trap.h>
 #include <kern/sched.h>
 #include <kern/picirq.h>
 #include <kern/kclock.h>
 #include <kern/kdebug.h>
 #include <kern/traceopt.h>
+#include <kern/vga.h>
 
 void
 timers_init(void) {
@@ -183,7 +183,8 @@ i386_init(void) {
 #endif /* TEST* */
 #endif
 
-    init_virtio_vga();
+    init_vga();
+    test_vga();
 
     // Break to monitor
     assert(false);

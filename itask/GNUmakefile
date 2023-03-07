@@ -223,10 +223,8 @@ IMAGES = $(OVMF_FIRMWARE) $(JOS_LOADER) $(OBJDIR)/kern/kernel $(JOS_ESP)/EFI/BOO
 QEMUOPTS += -bios $(OVMF_FIRMWARE)
 # QEMUOPTS += -debugcon file:$(UEFIDIR)/debug.log -global isa-debugcon.iobase=0x402
 
-#TODOITASK
 ifeq (${ITASK}, 1) 
-QEMUOPTS += -device virtio-vga
-# QEMUOPTS += -device virtio-gpu-pci
+QEMUOPTS += -device VGA
 endif 
 
 define POST_CHECKOUT
