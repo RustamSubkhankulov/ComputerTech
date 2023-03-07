@@ -54,12 +54,12 @@ The least significant byte selects the offset into the 256-byte configuration sp
 
 The following field descriptions are common to all Header Types:
 
-| **Bit 31** | **Register** | **Offset** | **Bits 31-24** | **Bits 23-16** | **Bits 15-8** | **Bits 7-0**    |
-|------------|--------------|------------|----------------|----------------|---------------|-----------------|
-| Enable Bit | 0x0          | 0x0        | Device ID      | Device ID      | Vendor ID     | Vendor ID       |
-|            | 0x1          | 0x4        | Status         | Status         | Command       | Command         |
-|            | 0x2          | 0x8        | Class code     | Subclass       | Prog IF       | Revision ID     |
-|            | 0x3          | 0xC        | BIST           | Header type    | Latency Timer | Cache Line Size |
+| **Register** | **Offset** | **Bits 31-24** | **Bits 23-16** | **Bits 15-8** | **Bits 7-0**    |
+|--------------|------------|----------------|----------------|---------------|-----------------|
+| 0x0          | 0x0        | Device ID      | Device ID      | Vendor ID     | Vendor ID       |
+| 0x1          | 0x4        | Status         | Status         | Command       | Command         |
+| 0x2          | 0x8        | Class code     | Subclass       | Prog IF       | Revision ID     |
+| 0x3          | 0xC        | BIST           | Header type    | Latency Timer | Cache Line Size |
 
 Device ID: Identifies the particular device. Where valid IDs are allocated by the vendor.
 Vendor ID: Identifies the manufacturer of the device. Where valid IDs are allocated by PCI-SIG (the list is here) to ensure uniqueness and 0xFFFF is an invalid value that will be returned on read accesses to Configuration Space registers of non-existent devices.
