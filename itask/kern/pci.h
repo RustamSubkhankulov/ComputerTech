@@ -65,6 +65,29 @@ enum PCI_header_type
     CARDBUS_BRIDGE    = 0x2,
 };
 
+enum Bar_addr_type
+{
+    BAR_IOSPACE   = 0x1, 
+    BAR_MEMORY_32 = 0x2,
+    BAR_MEMORY_64 = 0x3,
+    BAR_RESERVED  = 0x4
+};
+
+typedef struct Bar_addr
+{
+    enum Bar_addr_type type;
+    union
+    {
+        uint32_t iospace;
+        struct
+        {
+            uint64_t memory;
+            char prefetchable;
+        };
+    };
+    
+} bar_addr_t;
+
 typedef struct PCI_dev_general
 {
     pci_dev_t pci_dev;
@@ -84,6 +107,8 @@ typedef struct PCI_dev_general
     uint8_t interrupt_pin;
     uint8_t min_grant;
     uint8_t max_latency;
+
+    bar_addr_t bar_addr[6];
 
 } pci_dev_general_t;
 
@@ -211,9 +236,19 @@ enum Pci_class
 /* PCI device opeartions */
 
 uint16_t pci_dev_get_stat_reg(const pci_dev_t* pci_dev);
+void     pci_dev_set_stat_reg(const pci_dev_t* pci_dev, uint16_t val);
 
 uint16_t pci_dev_get_cmnd_reg(const pci_dev_t* pci_dev);
 void     pci_dev_set_cmnd_reg(const pci_dev_t* pci_dev, uint16_t val);
+
+bool pci_dev_cmnd_reg_check_flag(const pci_dev_t* pci_dev, uint16_t flag);
+bool pci_dev_stat_reg_check_flag(const pci_dev_t* pci_dev, uint16_t flag);
+
+void pci_dev_cmnd_reg_set_flag(const pci_dev_t* pci_dev, uint16_t flag);
+void pci_dev_stat_reg_set_flag(const pci_dev_t* pci_dev, uint16_t flag);
+
+void pci_dev_dump_cmnd_reg(const pci_dev_t* pci_dev);
+void pci_dev_dump_stat_reg(const pci_dev_t* pci_dev);
 
 // returns -1 on error (device not found) 
 int pci_dev_find(pci_dev_t* pci_dev, uint16_t class, uint16_t subclass, uint16_t vendor_id);
@@ -221,6 +256,8 @@ int pci_dev_find(pci_dev_t* pci_dev, uint16_t class, uint16_t subclass, uint16_t
 // return -1 if device is not present
 int pci_dev_read_header(pci_dev_t* pci_dev);
 int pci_dev_general_read_header(pci_dev_general_t* pci_dev_general);
+
+void pci_dev_general_dump_bars(const pci_dev_general_t* pci_dev_general);
 
 void dump_pci_dev(const pci_dev_t* pci_dev);
 void dump_pci_dev_general(const pci_dev_general_t* pci_dev_general);

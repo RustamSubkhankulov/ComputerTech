@@ -6,6 +6,99 @@
 #include <kern/traceopt.h>
 #include <kern/pci.h>
 
+static void pci_dev_general_convert_bar(pci_dev_general_t* pci_dev_general);
+
+bool pci_dev_cmnd_reg_check_flag(const pci_dev_t* pci_dev, uint16_t flag)
+{
+    assert(pci_dev != NULL);
+    return (pci_dev_get_cmnd_reg(pci_dev) & flag);
+}
+
+bool pci_dev_stat_reg_check_flag(const pci_dev_t* pci_dev, uint16_t flag)
+{
+    assert(pci_dev != NULL);
+    return (pci_dev_get_stat_reg(pci_dev) & flag);
+}
+
+void pci_dev_cmnd_reg_set_flag(const pci_dev_t* pci_dev, uint16_t flag)
+{
+    assert(pci_dev != NULL);
+
+    pci_dev_set_cmnd_reg(pci_dev, pci_dev_get_cmnd_reg(pci_dev) | flag);
+    return;
+}
+
+void pci_dev_stat_reg_set_flag(const pci_dev_t* pci_dev, uint16_t flag)
+{
+    assert(pci_dev != NULL);
+
+    pci_dev_set_stat_reg(pci_dev, pci_dev_get_stat_reg(pci_dev) | flag);
+    return;
+}
+
+void pci_dev_dump_cmnd_reg(const pci_dev_t* pci_dev)
+{
+    assert(pci_dev != NULL);
+
+    uint16_t cmnd = pci_dev_get_cmnd_reg(pci_dev);
+    cprintf("PCI DEV CMND REG DUMP \n");
+
+    if (cmnd & CMND_REG_INT_OFF) cprintf("- 1 Int disabled \n");
+    else cprintf("- 0 Int enabled \n");
+
+    if (cmnd & CMND_REG_FBB_ON) cprintf("- 1 Device is allowed to generate fast back-to-back transactions \n");
+    else cprintf("- 0 Fast back-to-back transactions are only allowed to the same agent \n");
+
+    if (cmnd & CMND_REG_SERR_ON) cprintf("- 1 SERR driver is enabled \n");
+    else cprintf("- 0 SERR driver is disabled \n");
+
+    if (cmnd & CMND_REG_PAR_ERR) cprintf("- 1 Parity Error Response enabled \n");
+    else cprintf("- 0 Parity Error Response disabled \n");
+
+    if (cmnd & CMND_REG_VGA_PS) cprintf("- 1 Device does not respond to palette register writes and will snoop the data \n");
+    else cprintf("- 0 Device will trate palette write accesses like all other accesses \n");
+
+    if (cmnd & CMND_REG_MWI_ON) cprintf("- 1 Device can generate the Memory Write and Invalidate command \n");
+    else cprintf("- 0 Memory Write command must be used \n");
+
+    if (cmnd & CMND_REG_SPEC_CYCLES) cprintf("- 1 Device can monitor Special Cycle operations \n");
+    else cprintf("- 0 Device will ignore Special Cycle operations \n");
+
+    if (cmnd & CMND_REG_BUS_MASTER) cprintf("- 1 Device can behave as a bus master \n");
+    else cprintf("- 0 Device can not generate PCI accesses \n");
+
+    if (cmnd & CMND_REG_MEM_SPACE) cprintf("- 1 Device can respond to Memory Space accesses \n");
+    else cprintf("- 0 Device cannot respond to Memory Space accesses \n");
+
+    if (cmnd & CMND_REG_IO_SPACE) cprintf("- 1 Device can respond to I/O Space accesses \n");
+    else cprintf("- 0 Device cannot respond to I/O Space accesses \n");
+
+    return;
+}
+
+void pci_dev_dump_stat_reg(const pci_dev_t* pci_dev)
+{
+    assert(pci_dev != NULL);
+
+    uint16_t stat = pci_dev_get_stat_reg(pci_dev);
+    cprintf("PCI DEV STAT REG DUMP \n");
+
+    cprintf("- Detected  Parity Error %d \n", !!(stat & STATUS_REG_DET_PAR_ERR));
+    cprintf("- Signalled System Error %d \n", !!(stat & STATUS_REG_SYG_SYS_ERR));
+    cprintf("- Received  Master Abort %d \n", !!(stat & STATUS_REG_RCV_MASTER_ABRT));
+    cprintf("- Received  Target Abort %d \n", !!(stat & STATUS_REG_RCV_TARGET_ABRT));
+    cprintf("- Signalled Target Abort %d \n", !!(stat & STATUS_REG_SYG_TARGET_ABRT));
+
+    cprintf("- DEVSEL Timing %d \n", (stat & STATUS_REG_DEVSEL_TIMING) >> 8);
+
+    cprintf("- Master Data Parity Error %d \n", !!(stat & STATUS_REG_MASTER_DATA_PAR_ERR));
+    cprintf("- Fast Back-to-Back Capable %d \n", !!(stat & STATUS_REG_FAST_BTB_CAPABLE));
+    cprintf("- 66 MHz Capable %d \n", !!(stat & STATUS_REG_66_MHZ_CAPABLE));
+    cprintf("- Capabilities List %d \n", !!(stat & STATUS_REG_CAPABILITIES_LIST));
+
+    return;
+}
+
 void init_pci(void)
 {
     if (trace_pci)
@@ -81,6 +174,15 @@ uint16_t pci_dev_get_stat_reg(const pci_dev_t* pci_dev)
     assert(pci_dev != 0);
     return pci_config_read16(pci_dev, PCI_CONF_SPACE_STATUS);
 }
+
+void pci_dev_set_stat_reg(const pci_dev_t* pci_dev, uint16_t val)
+{
+    assert(pci_dev != 0);
+
+    pci_config_write16(pci_dev, PCI_CONF_SPACE_STATUS, val);
+    return;
+}
+
 
 void pci_dev_set_cmnd_reg(const pci_dev_t* pci_dev, uint16_t val)
 {
@@ -213,8 +315,104 @@ int pci_dev_general_read_header(pci_dev_general_t* pci_dev_general)
     pci_dev_general->min_grant      = pci_config_read8(pci_dev, PCI_CONF_SPACE_TYPE_0_MIN_GNT);
     pci_dev_general->max_latency    = pci_config_read8(pci_dev, PCI_CONF_SPACE_TYPE_0_MAX_LAT);
 
+    pci_dev_general_convert_bar(pci_dev_general);
+
     return 0;
 }
+
+static void pci_dev_general_convert_bar(pci_dev_general_t* pci_dev_general)
+{
+    assert(pci_dev_general != NULL);
+
+    uint32_t* BARs = (uint32_t*) pci_dev_general->BAR;
+
+    for (unsigned barn = 0; barn < 6; )
+    {
+        if ((BARs[barn] & MS_BAR_ALWAYS0) == 0) // memory
+        {
+            if (BARs[barn] & MS_BAR_PREFETCH)
+                pci_dev_general->bar_addr[barn].prefetchable = 1;
+
+            if ((BARs[barn] & MS_BAR_TYPE) == MS_BAR_TYPE_64)
+            {
+                pci_dev_general->bar_addr[barn].type = BAR_MEMORY_64;
+                pci_dev_general->bar_addr[barn].memory = ((uint64_t) (BARs[barn] & 0xFFFFFFF0) 
+                                                    + ((uint64_t) (BARs[barn + 1] & 0xFFFFFFFF) << 32));
+            
+                barn += 2;
+            }
+            else if ((BARs[barn] & MS_BAR_TYPE) == MS_BAR_TYPE_32)
+            {
+                pci_dev_general->bar_addr[barn].type = BAR_MEMORY_32;
+                pci_dev_general->bar_addr[barn].memory = (uint64_t) (BARs[barn] & 0xFFFFFFF0);
+
+                barn += 1;
+            }
+            else // reserved 
+            {
+                pci_dev_general->bar_addr[barn].type = BAR_RESERVED;
+                pci_dev_general->bar_addr[barn].memory = 0;
+
+                barn += 1;
+            }
+        }
+        else // io space
+        {
+            pci_dev_general->bar_addr[barn].type = BAR_IOSPACE;
+            pci_dev_general->bar_addr[barn].iospace = BARs[barn] & 0xFFFFFFFC;
+
+            barn += 1;
+        }
+    }
+
+    return;
+}
+
+void pci_dev_general_dump_bars(const pci_dev_general_t* pci_dev_general)
+{
+    assert(pci_dev_general != NULL);
+
+    for (unsigned barn = 0; barn < 6; )
+    {
+        switch (pci_dev_general->bar_addr[barn].type)
+        {
+            case BAR_MEMORY_64:
+            {
+                cprintf("BAR[%u] and BAR[%u]: 64-bit %smemory at 0x%016lx \n", barn, barn + 1,
+                         (pci_dev_general->bar_addr[barn].prefetchable)? "prefetchable ": "", 
+                                                     pci_dev_general->bar_addr[barn].memory);
+                barn += 2;
+                break;
+            }
+            
+            case BAR_MEMORY_32:
+            {
+                cprintf("BAR[%u]: 32-bit %smemory at 0x%08lx \n", barn, (pci_dev_general->bar_addr[barn].prefetchable)? 
+                                                                                                        "prefetchable ": "", 
+                                                                                    pci_dev_general->bar_addr[barn].memory);
+                barn += 1;
+                break;
+            }
+
+            case BAR_IOSPACE:
+            {
+                cprintf("BAR[%u]: I/O space at 0x%08x \n", barn, pci_dev_general->bar_addr[barn].iospace);
+                barn += 1;
+                break;
+            }
+
+            default:
+            {
+                cprintf("BAR[%u]: reserved \n", barn);
+                barn += 1;
+                break;
+            }
+        }
+    }
+
+    return;
+}
+
 
 /* Enumerating PCI buses */
 
