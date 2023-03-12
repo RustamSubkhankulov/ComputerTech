@@ -26,7 +26,7 @@
 #define SEQ_DATA_REG                 0x3C5
 #define DAC_MASK                     0x3C6 // normally 0xFF
 #define DAC_STATE_REG_READ           0x3C7
-#define DAC_ADDR_REAL_MODE_REG_WRITE 0x3C7
+#define DAC_ADDR_READ_MODE_REG_WRITE 0x3C7
 #define DAC_ADDR_WRITE_MODE_REG      0x3C8
 #define DAC_DATA_REG                 0x3C9
 #define FEAT_CTRL_REG_READ           0x3CA
