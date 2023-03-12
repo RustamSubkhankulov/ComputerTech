@@ -709,3 +709,63 @@ uint32_t read_color_from_palette(unsigned entry)
          | ((uint32_t) g >> 8)
          | ((uint32_t) b >> 16); 
 }
+
+void misc_output_set_bit(uint8_t bitno)
+{
+    uint8_t misc_output = inb(MISC_OUTPUT_R);
+    outb(MISC_OUTPUT_W, misc_output | (1<< bitno));
+    return;
+}
+
+void misc_output_clear_bit(uint8_t bitno)
+{
+    uint8_t misc_output = inb(MISC_OUTPUT_R);
+    outb(MISC_OUTPUT_W, misc_output & (~(1<< bitno)));
+    return;
+}
+
+bool misc_output_check_bit(uint8_t bitno)
+{
+    return inb(MISC_OUTPUT_R) & (1 << bitno);
+}
+
+void feat_ctrl_set_bit(uint8_t bitno)
+{
+    uint8_t feat_ctrl = inb(FEAT_CTRL_R);
+    outb(FEAT_CTRL_W, feat_ctrl | (1 << bitno));
+    return;
+}
+
+void feat_ctrl_clear_bit(uint8_t bitno)
+{
+    uint8_t feat_ctrl = inb(FEAT_CTRL_R);
+    outb(FEAT_CTRL_W, feat_ctrl & (~(1 << bitno)));
+    return;
+}
+
+bool feat_ctrl_check_bit(uint8_t bitno)
+{
+    return inb(FEAT_CTRL_R) & (1 << bitno);
+}
+
+bool inp_status_0_check_bit(uint8_t bitno)
+{
+    return inb(INP_STATUS_0) & (1 << bitno);
+}
+
+bool inp_status_1_check_bit(uint8_t bitno)
+{
+    return inb(INP_STATUS_1) & (1 << bitno);
+}
+
+void misc_output_clock_select_set(uint8_t cs)
+{
+    uint8_t misc_output = inb(MISC_OUTPUT_R);
+    outb(MISC_OUTPUT_W, (misc_output & 0b111100) | (cs << 2));
+    return;
+}
+
+uint8_t misc_output_clock_select_get(void)
+{
+    return (inb(MISC_OUTPUT_R) >> 2) & 0b11;
+}

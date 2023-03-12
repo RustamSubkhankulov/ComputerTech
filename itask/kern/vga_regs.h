@@ -456,14 +456,25 @@ enum External_register
 
 void misc_output_set_bit(uint8_t bitno);
 void misc_output_clear_bit(uint8_t bitno);
-bool misc_output_check_bit
+bool misc_output_check_bit(uint8_t bitno);
+
+void    misc_output_clock_select_set(uint8_t cs);
+uint8_t misc_output_clock_select_get(void);
 
 #define FEAT_CTRL_FC1 1
 #define FEAT_CTRL_FC0 0
 
+void feat_ctrl_set_bit(uint8_t bitno);
+void feat_ctrl_clear_bit(uint8_t bitno);
+bool feat_ctrl_check_bit(uint8_t bitno);
+
 #define INP_STATUS_0_SS       4
+
+bool inp_status_0_check_bit(uint8_t bitno);
 
 #define INP_STATUS_1_VRETRACE 3
 #define INP_STATUS_1_DD       0
+
+bool inp_status_1_check_bit(uint8_t bitno);
 
 #endif // JOS_KERN_VGA_REGS_H
