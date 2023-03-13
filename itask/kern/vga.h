@@ -7,31 +7,17 @@
 #include <inc/assert.h>
 #include <inc/x86.h>
 
-#include <kern/pci.h>
-#include <kern/pmap.h>
+#include <kern/vga_regs.h>
+#include <kern/vbe.h>
+#include <kern/standard_vga.h>
 
-enum Pci_display_controller_subclass
-{
-    PCI_SUBCLASS_VGA_COMPATIBLE_CONTROLLER = 0x0,
-    PCI_SUBCLASS_XGA_CONTROLLER            = 0x1,
-    PCI_SUBCLASS_3D_CONTROLLER             = 0x2,
-    PCI_SUBCLASS_OTHER                     = 0x80
-};
+static const uint16_t Display_res_x = 1024U;
+static const uint16_t Display_res_y = 768U;
 
-const static enum Pci_class 
-                  Vga_pci_class = PCI_CLASS_DISPLAY_CONTROLLER;
+static const uint16_t Virt_display_res_x = 1024U;
+static const uint16_t Virt_display_res_y = Fb_size / (sizeof(uint32_t) * Virt_display_res_x);
 
-const static enum Pci_display_controller_subclass 
-                  Vga_pci_subclass = PCI_SUBCLASS_VGA_COMPATIBLE_CONTROLLER;
-
-const static uint16_t Vga_pci_vendor_id = 0x1234;
-const static uint16_t Vga_pci_device_id = 0x1111;
-
-const static unsigned Fb_barn = 0;
-const static size_t Fb_size = 16 * MB;
-
-const static unsigned MMIO_barn = 2;
-const static size_t MMIO_size = 4 * KB;
+static const enum Vbe_dispi_bpp Display_bpp  = VBE_DISPI_BPP_32;
 
 typedef struct Vga_dev
 {
@@ -40,10 +26,29 @@ typedef struct Vga_dev
     uint64_t fb;
     uint64_t mmio;
 
+    uint16_t xres;
+    uint16_t yres;
+    uint16_t bpp;
+
+    uint16_t vxres;
+    uint16_t vyres;
+    uint16_t x_offs;
+    uint16_t y_offs;
+
+    bool dac_8bit;
+    bool lfb_enabled;
+    bool banked_mode_enabled;
+    bool noclearmem_enabled;
+
 } vga_dev_t;
 
 void init_vga(void);
 void test_vga(void);
+
+static inline size_t vidmem_offset_by_coords(uint16_t x, uint16_t y, uint16_t xres)
+{   
+    return (size_t) ((y * xres + x) * sizeof(uint32_t));
+}
 
 #define VGA_TO_PCI_GENERAL(vga_dev) (&((vga_dev)->pci_dev_general))
 #define VGA_TO_PCI(vga_dev) (&((vga_dev)->pci_dev_general.pci_dev))

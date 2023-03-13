@@ -205,7 +205,7 @@ void sequencer_reg_csbs_set(uint8_t csbs)
     csbs &= 0b11;
 
     uint8_t char_map_select = get_sequencer_reg(CHAR_MAP_SELECT);
-    set_sequencer_reg(CHAR_MAP_SELECT, (char_map_select & 0b11111100) | csas);
+    set_sequencer_reg(CHAR_MAP_SELECT, (char_map_select & 0b11111100) | csbs);
     return;
 }
 
@@ -539,12 +539,12 @@ void crtc_reg_ver_total_set(uint16_t vt)
     assert(vt <= 0b1111111111);
 
     if (vt & (1 << 9))
-        crtc_reg_set_bit(OVERFLOW, OVERFLOW_VT9)
+        crtc_reg_set_bit(OVERFLOW, OVERFLOW_VT9);
     else 
         crtc_reg_clear_bit(OVERFLOW, OVERFLOW_VT9);
 
     if (vt & (1 << 8))
-        crtc_reg_set_bit(OVERFLOW, OVERFLOW_VT8)
+        crtc_reg_set_bit(OVERFLOW, OVERFLOW_VT8);
     else 
         crtc_reg_clear_bit(OVERFLOW, OVERFLOW_VT8);
 

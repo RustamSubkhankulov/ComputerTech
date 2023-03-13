@@ -12,7 +12,8 @@
         "traceopt.h": "c",
         "string.h": "c",
         "assert.h": "c",
-        "x86.h": "c"
+        "x86.h": "c",
+        "error.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
