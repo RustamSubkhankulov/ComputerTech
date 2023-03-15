@@ -194,7 +194,15 @@ void View_text::poll_on_key()
 {
     struct pollfd req = {.fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
 
-    int err = poll(&req, 1, Poll_timeout_ms);
+    int err = 0;
+    errno = 0;
+
+    do 
+    {
+        err = poll(&req, 1, Poll_timeout_ms);
+
+    } while (err == -1 && errno == EINTR);
+
     if (err == -1)
     {
         fprintf(stderr, "poll() failed: %s \n", strerror(errno));
