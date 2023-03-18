@@ -230,8 +230,7 @@ void test_gpu(void)
         Vga_dev.fb[iter + Vga_dev.display2offs] = 0x0032A0A8;
     }
 
-    vbe_dispi_set_reg(VBE_DISPI_INDEX_X_OFFSET, Vga_dev.display2coords.x);
-    vbe_dispi_set_reg(VBE_DISPI_INDEX_Y_OFFSET, Vga_dev.display2coords.y);
+    gpu_page_flip();
 
     if (trace_gpu)
         cprintf("vga: tests finished. \n");
@@ -302,4 +301,26 @@ int gpu_set_display_res(pair16_t res)
     pair16_t vres = {.x = res.x, .y = Fb_size / (sizeof(uint32_t) * res.x)};
     
     return gpu_set_display_vres(vres);
+}
+
+void gpu_page_flip(void)
+{
+    vbe_dispi_set_reg(VBE_DISPI_INDEX_X_OFFSET, Vga_dev.display2coords.x);
+    vbe_dispi_set_reg(VBE_DISPI_INDEX_Y_OFFSET, Vga_dev.display2coords.y);
+
+    if (Vga_dev.display2coords.y != 0)
+    {
+        Vga_dev.display2coords.x = 0;
+        Vga_dev.display2coords.y = Vga_dev.res.y;
+    }
+    else 
+    {
+        Vga_dev.display2coords.x = 0;
+        Vga_dev.display2coords.y = 0;
+
+    }
+
+    Vga_dev.display2offs = vidmem_offset_by_coords(Vga_dev.display2coords, Vga_dev.res.x);
+
+    return;
 }

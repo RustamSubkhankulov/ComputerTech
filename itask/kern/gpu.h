@@ -44,6 +44,8 @@ void test_gpu(void);
 pair16_t gpu_get_display_res(void);
 int gpu_set_display_res(pair16_t res);
 
+void gpu_page_flip(void);
+
 static inline size_t vidmem_offset_by_coords(pair16_t coords, uint16_t xres)
 {   
     return (size_t) ((coords.y * xres + coords.x));
