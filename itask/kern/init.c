@@ -18,7 +18,7 @@
 #include <kern/kclock.h>
 #include <kern/kdebug.h>
 #include <kern/traceopt.h>
-#include <kern/vga.h>
+#include <kern/gpu.h>
 
 void
 timers_init(void) {
@@ -183,8 +183,8 @@ i386_init(void) {
 #endif /* TEST* */
 #endif
 
-    init_vga();
-    test_vga();
+    init_gpu();
+    test_gpu();
 
     // Break to monitor
     assert(false);

@@ -38,7 +38,7 @@ KERN_SRCFILES := kern/bootstrap.S \
 			kern/spinlock.c \
 
 ifeq (${ITASK}, 1)
-KERN_SRCFILES += kern/pci.c kern/vga.c kern/vga_regs.c kern/vbe.c
+KERN_SRCFILES += kern/pci.c kern/gpu.c kern/vga_regs.c kern/vbe.c
 endif
 
 ifeq ($(CONFIG_KSPACE),y)

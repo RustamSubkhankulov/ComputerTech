@@ -60,8 +60,8 @@
 #endif 
 #endif 
 
-#ifndef trace_vga
-#define trace_vga 1
+#ifndef trace_gpu
+#define trace_gpu 1
 #endif 
 
 #endif

@@ -165,6 +165,10 @@ bool vbe_dispi_check_bit(enum Vbe_dispi_reg reg, uint8_t bitno);
 void vbe_dispi_clear_bit(enum Vbe_dispi_reg reg, uint8_t bitno);
 void vbe_dispi_set_bit  (enum Vbe_dispi_reg reg, uint8_t bitno);
 
+bool vbe_dispi_check_bits(enum Vbe_dispi_reg reg, uint16_t bits);
+void vbe_dispi_clear_bits(enum Vbe_dispi_reg reg, uint16_t bits);
+void vbe_dispi_set_bits  (enum Vbe_dispi_reg reg, uint16_t bits);
+
 static inline void vbe_dispi_enable(uint16_t flags)
 {
     vbe_dispi_set_reg(VBE_DISPI_INDEX_ENABLE, VBE_DISPI_ENABLED | flags);

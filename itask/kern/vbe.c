@@ -46,4 +46,27 @@ void vbe_dispi_set_bit(enum Vbe_dispi_reg reg, uint8_t bitno)
     return;
 }
 
+bool vbe_dispi_check_bits(enum Vbe_dispi_reg reg, uint16_t bits)
+{
+    assert(reg <= VBE_DISPI_INDEX_Y_OFFSET);
 
+    return vbe_dispi_get_reg(reg) & bits;
+}
+
+void vbe_dispi_clear_bits(enum Vbe_dispi_reg reg, uint16_t bits)
+{
+    assert(reg <= VBE_DISPI_INDEX_Y_OFFSET);
+
+    uint16_t value = vbe_dispi_get_reg(reg);
+    vbe_dispi_set_bit(reg, value & (~bits));
+    return;
+}
+
+void vbe_dispi_set_bits(enum Vbe_dispi_reg reg, uint16_t bits)
+{
+    assert(reg <= VBE_DISPI_INDEX_Y_OFFSET);
+
+    uint16_t value = vbe_dispi_get_reg(reg);
+    vbe_dispi_set_bit(reg, value | bits);
+    return;
+}
