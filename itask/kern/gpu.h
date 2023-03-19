@@ -36,6 +36,9 @@ typedef struct Vga_dev
 
     uint16_t flags;
 
+    bool surface_requested;
+    bool surface_submitted;
+
 } vga_dev_t;
 
 void init_gpu(void);
@@ -44,12 +47,15 @@ void test_gpu(void);
 pair16_t gpu_get_display_res(void);
 int gpu_set_display_res(pair16_t res);
 
-void gpu_page_flip(void);
-
 static inline size_t vidmem_offset_by_coords(pair16_t coords, uint16_t xres)
 {   
     return (size_t) ((coords.y * xres + coords.x));
 }
+
+void gpu_clear_display(void);
+int gpu_page_flip(void);
+int gpu_request_surface(surface_t* surface);
+int gpu_submit_surface(const surface_t* surface);
 
 #define VGA_TO_PCI_GENERAL(vga_dev) (&((vga_dev)->pci_dev_general))
 #define VGA_TO_PCI(vga_dev) (&((vga_dev)->pci_dev_general.pci_dev))

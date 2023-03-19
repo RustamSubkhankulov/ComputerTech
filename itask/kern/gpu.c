@@ -5,6 +5,7 @@
 #include <kern/traceopt.h>
 #include <kern/gpu.h>
 #include <inc/string.h>
+#include <kern/graphics.h>
 
 extern void map_addr_early_boot(uintptr_t va, uintptr_t pa, size_t sz);
 
@@ -37,8 +38,8 @@ void init_gpu(void)
     err = vga_set_display_pref();
     if (err < 0) goto panic;
 
-    err = gpu_set_display_vres(Virt_display_start_res);
-    if (err < 0) goto panic;
+    Vga_dev.surface_requested = false;
+    Vga_dev.surface_submitted = false;
 
     if (trace_gpu)
         cprintf("vga: initialization finished. \n");
@@ -110,38 +111,11 @@ static int vga_set_display_pref(void)
     Vga_dev.res = Display_start_res;
     Vga_dev.bpp  = Display_bpp;
 
+    int err = gpu_set_display_vres(Virt_display_start_res);
+    if (err < 0) return err;
+
     if (trace_gpu)
         cprintf("vga: display res & bpp successfully initialized. \n");
-    return 0;
-}
-
-static int vga_set_virtual_display_pref(void)
-{
-    if (trace_gpu)
-        cprintf("vga: setting up virtual display preferences: (Xres;Yres) = (%u;%u). \n", Virt_display_start_res.x,
-                                                                                          Virt_display_start_res.y);
-
-    vbe_dispi_set_reg(VBE_DISPI_INDEX_VIRT_WIDTH, Virt_display_start_res.x);
-
-    if (vbe_dispi_get_reg(VBE_DISPI_INDEX_VIRT_HEIGHT) != Virt_display_start_res.y)
-    {
-        cprintf("vga: failed to initialize virtual display \n");
-        return -E_DEV_RT;
-    }
-
-    vbe_dispi_set_reg(VBE_DISPI_INDEX_X_OFFSET, 0);
-    vbe_dispi_set_reg(VBE_DISPI_INDEX_Y_OFFSET, 0);
-
-    Vga_dev.vres  = Virt_display_start_res;
-    Vga_dev.voffs.x = 0; 
-    Vga_dev.voffs.y = 0; 
-
-    Vga_dev.display2coords.x = 0;
-    Vga_dev.display2coords.y = Display_start_res.y;
-    Vga_dev.display2offs = vidmem_offset_by_coords(Vga_dev.display2coords, Display_start_res.x);
-
-    if (trace_gpu)
-        cprintf("vga: virtual display res successfully initialized. \n");
     return 0;
 }
 
@@ -224,13 +198,51 @@ void test_gpu(void)
 {
     if (trace_gpu)
         cprintf("vga: tests started. \n");
+    
+    int16_t rad = 1;
+    int16_t rad_inc = 1;
 
-    for (size_t iter = 0; iter < Vga_dev.res.x * Vga_dev.res.y; iter++)
+    while (1)
     {
-        Vga_dev.fb[iter + Vga_dev.display2offs] = 0x0032A0A8;
-    }
+        surface_t surface = { 0 };
+        int err = gpu_request_surface(&surface);
+        assert(err == 0);
 
-    gpu_page_flip();
+        surface_clear(&surface);
+
+        // pair16_t tl = {.x = 0, .y = 0};
+        // pair16_t br = {.x = Vga_dev.res.x - 1, .y = Vga_dev.res.y - 1};
+
+        // pair16_t tr = {.x = Vga_dev.res.x - 1, .y = 0}; 
+        // pair16_t bl = {.x = 0, .y = Vga_dev.res.y - 1};
+
+        color32bpp_t lc = {.rgb = 0xFF0000}; 
+
+        // surface_line(&surface, tl, br, lc);
+        // surface_line(&surface, tr, bl, lc);
+
+        // surface_hzline(&surface, 0, Vga_dev.res.x - 1, Vga_dev.res.y / 2, lc);
+        // surface_vtline(&surface, 0, Vga_dev.res.y - 1, Vga_dev.res.x / 2, lc);
+
+        // surface_box_thick_in(&surface, bl, tr, lc, 10);
+
+        pair16_t center = {.x = Vga_dev.res.x / 2, .y = Vga_dev.res.y / 2};
+        surface_cf(&surface, center, rad, lc);
+
+        err = gpu_submit_surface(&surface);
+        assert(err == 0);
+
+        err = gpu_page_flip();
+        assert(err == 0);
+
+        rad += rad_inc;
+
+        if (rad == 0) rad_inc = 1;
+        if (rad == 50) rad_inc = -1;
+
+        int ct = 10000000;
+        while (ct-- != 0);
+    }
 
     if (trace_gpu)
         cprintf("vga: tests finished. \n");
@@ -303,8 +315,11 @@ int gpu_set_display_res(pair16_t res)
     return gpu_set_display_vres(vres);
 }
 
-void gpu_page_flip(void)
+int gpu_page_flip(void)
 {
+    if (Vga_dev.surface_submitted != true)
+        return -1;
+
     vbe_dispi_set_reg(VBE_DISPI_INDEX_X_OFFSET, Vga_dev.display2coords.x);
     vbe_dispi_set_reg(VBE_DISPI_INDEX_Y_OFFSET, Vga_dev.display2coords.y);
 
@@ -317,10 +332,51 @@ void gpu_page_flip(void)
     {
         Vga_dev.display2coords.x = 0;
         Vga_dev.display2coords.y = 0;
-
     }
 
     Vga_dev.display2offs = vidmem_offset_by_coords(Vga_dev.display2coords, Vga_dev.res.x);
 
-    return;
+    return 0;
+}
+
+int gpu_request_surface(surface_t* surface)
+{
+    if (Vga_dev.surface_requested != false)
+        return -1;
+
+    surface->res = Vga_dev.res;
+    surface->buffer = Vga_dev.fb + vidmem_offset_by_coords(Vga_dev.display2coords, Vga_dev.res.x);
+    surface->bpp = Vga_dev.bpp;
+
+    Vga_dev.surface_requested = true;
+    Vga_dev.surface_submitted = false;
+
+    return 0;
+}
+
+int gpu_submit_surface(const surface_t* surface)
+{
+    if (Vga_dev.surface_requested != true || Vga_dev.surface_submitted != false)
+        return -1;
+
+    if (surface->buffer != Vga_dev.fb + vidmem_offset_by_coords(Vga_dev.display2coords, Vga_dev.res.x))
+        return -E_INVAL;
+
+    if (surface->res.x != Vga_dev.res.x 
+     || surface->res.y != Vga_dev.res.y)
+        return -E_INVAL;
+
+    if (surface->bpp != Vga_dev.bpp)
+        return -E_INVAL;
+
+    Vga_dev.surface_requested = false;
+    Vga_dev.surface_submitted = true;
+
+    return 0;
+}
+
+void gpu_clear_display(void)
+{
+    vbe_dispi_disable();
+    vbe_dispi_enable(Vga_dev.flags);
 }

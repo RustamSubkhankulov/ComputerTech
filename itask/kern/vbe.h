@@ -138,6 +138,18 @@ be defined as 0x00RRGGBB.
 
 */
 
+typedef union Color32bpp
+{
+    struct 
+    {
+        uint8_t b;
+        uint8_t g;
+        uint8_t r;
+    };
+
+    uint32_t rgb;
+} color32bpp_t;
+
 enum Vbe_dispi_index_id
 {
     VBE_DISPI_ID0 = 0xB0C0,

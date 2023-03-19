@@ -10,36 +10,28 @@ static void pci_dev_general_convert_bar(pci_dev_general_t* pci_dev_general);
 
 bool pci_dev_cmnd_reg_check_flag(const pci_dev_t* pci_dev, uint16_t flag)
 {
-    assert(pci_dev != NULL);
     return (pci_dev_get_cmnd_reg(pci_dev) & flag);
 }
 
 bool pci_dev_stat_reg_check_flag(const pci_dev_t* pci_dev, uint16_t flag)
 {
-    assert(pci_dev != NULL);
     return (pci_dev_get_stat_reg(pci_dev) & flag);
 }
 
 void pci_dev_cmnd_reg_set_flag(const pci_dev_t* pci_dev, uint16_t flag)
 {
-    assert(pci_dev != NULL);
-
     pci_dev_set_cmnd_reg(pci_dev, pci_dev_get_cmnd_reg(pci_dev) | flag);
     return;
 }
 
 void pci_dev_stat_reg_set_flag(const pci_dev_t* pci_dev, uint16_t flag)
 {
-    assert(pci_dev != NULL);
-
     pci_dev_set_stat_reg(pci_dev, pci_dev_get_stat_reg(pci_dev) | flag);
     return;
 }
 
 void pci_dev_dump_cmnd_reg(const pci_dev_t* pci_dev)
 {
-    assert(pci_dev != NULL);
-
     uint16_t cmnd = pci_dev_get_cmnd_reg(pci_dev);
     cprintf("PCI DEV CMND REG DUMP \n");
 
@@ -78,8 +70,6 @@ void pci_dev_dump_cmnd_reg(const pci_dev_t* pci_dev)
 
 void pci_dev_dump_stat_reg(const pci_dev_t* pci_dev)
 {
-    assert(pci_dev != NULL);
-
     uint16_t stat = pci_dev_get_stat_reg(pci_dev);
     cprintf("PCI DEV STAT REG DUMP \n");
 
@@ -117,7 +107,6 @@ void init_pci(void)
 
 void dump_pci_dev(const pci_dev_t* pci_dev)
 {
-    assert(pci_dev != 0);
     cprintf("PCI_dev dump: \n");
 
     cprintf("BUS: 0x%02x DEVICE: 0x%02x FUNCTION: 0x%02x \n", pci_dev->bus_number, 
@@ -138,7 +127,6 @@ void dump_pci_dev(const pci_dev_t* pci_dev)
 
 void dump_pci_dev_general(const pci_dev_general_t* pci_dev_general)
 {
-    assert(pci_dev_general != 0);
     cprintf("PCI_dev_general dump: \n");
 
     dump_pci_dev(&(pci_dev_general->pci_dev));
@@ -171,14 +159,11 @@ void dump_pci_dev_general(const pci_dev_general_t* pci_dev_general)
 
 uint16_t pci_dev_get_stat_reg(const pci_dev_t* pci_dev)
 {
-    assert(pci_dev != 0);
     return pci_config_read16(pci_dev, PCI_CONF_SPACE_STATUS);
 }
 
 void pci_dev_set_stat_reg(const pci_dev_t* pci_dev, uint16_t val)
 {
-    assert(pci_dev != 0);
-
     pci_config_write16(pci_dev, PCI_CONF_SPACE_STATUS, val);
     return;
 }
@@ -186,22 +171,17 @@ void pci_dev_set_stat_reg(const pci_dev_t* pci_dev, uint16_t val)
 
 void pci_dev_set_cmnd_reg(const pci_dev_t* pci_dev, uint16_t val)
 {
-    assert(pci_dev != 0);
-
     pci_config_write16(pci_dev, PCI_CONF_SPACE_COMMAND, val);
     return;
 }
 
 uint16_t pci_dev_get_cmnd_reg(const pci_dev_t* pci_dev)
 {
-    assert(pci_dev != 0);
     return pci_config_read16(pci_dev, PCI_CONF_SPACE_COMMAND);
 }
 
 int pci_dev_find(pci_dev_t* pci_dev, uint16_t class, uint16_t subclass, uint16_t vendor_id)
 {
-    assert(pci_dev != 0);
-
     uint16_t bus      = 0;
     uint8_t  dev      = 0;
     uint8_t  function = 0;
@@ -269,8 +249,6 @@ found:
 
 int pci_dev_read_header(pci_dev_t* pci_dev)
 {
-    assert(pci_dev != 0);
-
     if (check_pci_device(pci_dev->bus_number, pci_dev->device_number, pci_dev->function_number) == false)
         return -1;
 
@@ -288,7 +266,6 @@ int pci_dev_read_header(pci_dev_t* pci_dev)
 
 int pci_dev_general_read_header(pci_dev_general_t* pci_dev_general)
 {
-    assert(pci_dev_general != 0);
     pci_dev_t* pci_dev = &(pci_dev_general->pci_dev);
 
     if (pci_dev_read_header(pci_dev) == -1)
@@ -322,8 +299,6 @@ int pci_dev_general_read_header(pci_dev_general_t* pci_dev_general)
 
 static void pci_dev_general_convert_bar(pci_dev_general_t* pci_dev_general)
 {
-    assert(pci_dev_general != NULL);
-
     uint32_t* BARs = (uint32_t*) pci_dev_general->BAR;
 
     for (unsigned barn = 0; barn < 6; )
@@ -370,8 +345,6 @@ static void pci_dev_general_convert_bar(pci_dev_general_t* pci_dev_general)
 
 void pci_dev_general_dump_bars(const pci_dev_general_t* pci_dev_general)
 {
-    assert(pci_dev_general != NULL);
-
     for (unsigned barn = 0; barn < 6; )
     {
         switch (pci_dev_general->bar_addr[barn].type)
@@ -521,21 +494,17 @@ int enumerate_pci_devices(void)
 
 uint8_t pci_config_read8(const pci_dev_t* pci_dev, uint8_t offset)
 {
-    assert(pci_dev != 0);
     return (uint8_t) (pci_config_read32(pci_dev, offset) >> ((offset & 0x3) * 8) & 0xFF);
 }
 
 
 uint16_t pci_config_read16(const pci_dev_t* pci_dev, uint8_t offset)
 {
-    assert(pci_dev != 0);
     return (uint16_t) (pci_config_read32(pci_dev, offset) >> ((offset & 0x2) * 8) & 0xFFFF);
 }
 
 uint32_t pci_config_read32(const pci_dev_t* pci_dev, uint8_t offset)
 {
-    assert(pci_dev != 0);
-
     uint32_t addr = PCI_CONF_ADDR_PORT_ENABLE_BIT 
                   | ((uint32_t) pci_dev->bus_number)      << PCI_CONF_ADDR_PORT_BUS_OFFS
                   | ((uint32_t) pci_dev->device_number)   << PCI_CONF_ADDR_PORT_DEV_OFFS
@@ -553,8 +522,6 @@ uint32_t pci_config_read32(const pci_dev_t* pci_dev, uint8_t offset)
 
 void pci_config_write8(const pci_dev_t* pci_dev, uint8_t offset, uint8_t val)
 {
-    assert(pci_dev != 0);
-
     uint16_t current = pci_config_read16(pci_dev, offset);
     uint16_t new     = ((uint16_t)val << ((offset & 0x1) * 8)) | (current & (0xFF00 >> (offset & 0x1) * 8));
 
@@ -563,8 +530,6 @@ void pci_config_write8(const pci_dev_t* pci_dev, uint8_t offset, uint8_t val)
 
 void pci_config_write16(const pci_dev_t* pci_dev, uint8_t offset, uint16_t val)
 {
-    assert(pci_dev != 0);
-
     uint32_t current = pci_config_read32(pci_dev, offset);
     uint32_t new     = ((uint32_t)val << ((offset & 0x2) * 8)) | (current & (0xFFFF0000 >> (offset & 0x2) * 8));
 
@@ -573,8 +538,6 @@ void pci_config_write16(const pci_dev_t* pci_dev, uint8_t offset, uint16_t val)
 
 void pci_config_write32(const pci_dev_t* pci_dev, uint8_t offset, uint32_t val)
 {
-    assert(pci_dev != 0);
-
     uint32_t addr = PCI_CONF_ADDR_PORT_ENABLE_BIT 
                   | ((uint32_t) pci_dev->bus_number)      << PCI_CONF_ADDR_PORT_BUS_OFFS
                   | ((uint32_t) pci_dev->device_number)   << PCI_CONF_ADDR_PORT_DEV_OFFS

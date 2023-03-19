@@ -14,7 +14,8 @@
         "assert.h": "c",
         "x86.h": "c",
         "error.h": "c",
-        "standard_vga.h": "c"
+        "standard_vga.h": "c",
+        "math.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
