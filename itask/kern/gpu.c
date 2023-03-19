@@ -38,8 +38,8 @@ void init_gpu(void)
     err = vga_set_display_pref();
     if (err < 0) goto panic;
 
-    Vga_dev.surface_requested = false;
-    Vga_dev.surface_submitted = false;
+    Vga_dev.srfc_requested = false;
+    Vga_dev.srfc_submitted = false;
 
     if (trace_gpu)
         cprintf("vga: initialization finished. \n");
@@ -204,11 +204,11 @@ void test_gpu(void)
 
     while (1)
     {
-        surface_t surface = { 0 };
+        srfc_t surface = { 0 };
         int err = gpu_request_surface(&surface);
         assert(err == 0);
 
-        surface_clear(&surface);
+        srfc_clear(&surface);
 
         // pair16_t tl = {.x = 0, .y = 0};
         // pair16_t br = {.x = Vga_dev.res.x - 1, .y = Vga_dev.res.y - 1};
@@ -218,16 +218,16 @@ void test_gpu(void)
 
         color32bpp_t lc = {.rgb = 0xFF0000}; 
 
-        // surface_line(&surface, tl, br, lc);
-        // surface_line(&surface, tr, bl, lc);
+        // srfc_line(&surface, tl, br, lc);
+        // srfc_line(&surface, tr, bl, lc);
 
-        // surface_hzline(&surface, 0, Vga_dev.res.x - 1, Vga_dev.res.y / 2, lc);
-        // surface_vtline(&surface, 0, Vga_dev.res.y - 1, Vga_dev.res.x / 2, lc);
+        // srfc_hzline(&surface, 0, Vga_dev.res.x - 1, Vga_dev.res.y / 2, lc);
+        // srfc_vtline(&surface, 0, Vga_dev.res.y - 1, Vga_dev.res.x / 2, lc);
 
-        // surface_box_thick_in(&surface, bl, tr, lc, 10);
+        // srfc_box_thick_in(&surface, bl, tr, lc, 10);
 
         pair16_t center = {.x = Vga_dev.res.x / 2, .y = Vga_dev.res.y / 2};
-        surface_cf(&surface, center, rad, lc);
+        srfc_cf(&surface, center, rad, lc);
 
         err = gpu_submit_surface(&surface);
         assert(err == 0);
@@ -317,7 +317,7 @@ int gpu_set_display_res(pair16_t res)
 
 int gpu_page_flip(void)
 {
-    if (Vga_dev.surface_submitted != true)
+    if (Vga_dev.srfc_submitted != true)
         return -1;
 
     vbe_dispi_set_reg(VBE_DISPI_INDEX_X_OFFSET, Vga_dev.display2coords.x);
@@ -339,24 +339,24 @@ int gpu_page_flip(void)
     return 0;
 }
 
-int gpu_request_surface(surface_t* surface)
+int gpu_request_surface(srfc_t* surface)
 {
-    if (Vga_dev.surface_requested != false)
+    if (Vga_dev.srfc_requested != false)
         return -1;
 
     surface->res = Vga_dev.res;
     surface->buffer = Vga_dev.fb + vidmem_offset_by_coords(Vga_dev.display2coords, Vga_dev.res.x);
     surface->bpp = Vga_dev.bpp;
 
-    Vga_dev.surface_requested = true;
-    Vga_dev.surface_submitted = false;
+    Vga_dev.srfc_requested = true;
+    Vga_dev.srfc_submitted = false;
 
     return 0;
 }
 
-int gpu_submit_surface(const surface_t* surface)
+int gpu_submit_surface(const srfc_t* surface)
 {
-    if (Vga_dev.surface_requested != true || Vga_dev.surface_submitted != false)
+    if (Vga_dev.srfc_requested != true || Vga_dev.srfc_submitted != false)
         return -1;
 
     if (surface->buffer != Vga_dev.fb + vidmem_offset_by_coords(Vga_dev.display2coords, Vga_dev.res.x))
@@ -369,8 +369,8 @@ int gpu_submit_surface(const surface_t* surface)
     if (surface->bpp != Vga_dev.bpp)
         return -E_INVAL;
 
-    Vga_dev.surface_requested = false;
-    Vga_dev.surface_submitted = true;
+    Vga_dev.srfc_requested = false;
+    Vga_dev.srfc_submitted = true;
 
     return 0;
 }

@@ -16,12 +16,12 @@ static inline size_t offs_by_coords_32bpp(pair16_t coords, uint16_t xres)
     return (size_t) ((coords.y * xres + coords.x));
 }
 
-void surface_blit(surface_t* surface, void* buffer, pair16_t src, uint16_t bpp, pair16_t dst, pair16_t copyres)
+void srfc_blit(srfc_t* surface, void* buffer, pair16_t src, uint16_t bpp, pair16_t dst, pair16_t copyres)
 {
 
 }
 
-void surface_set_pxl(surface_t* surface, pair16_t coords, color32bpp_t color)
+void srfc_set_pxl(srfc_t* surface, pair16_t coords, color32bpp_t color)
 {
     assert(surface->res.x > coords.x && surface->res.y > coords.y);
     assert(surface->bpp == 32);
@@ -30,7 +30,7 @@ void surface_set_pxl(surface_t* surface, pair16_t coords, color32bpp_t color)
     return;
 }
 
-void surface_fill(surface_t* surface, color32bpp_t color)
+void srfc_fill(srfc_t* surface, color32bpp_t color)
 {
     assert(surface->bpp == 32);
 
@@ -42,15 +42,15 @@ void surface_fill(surface_t* surface, color32bpp_t color)
     return;
 }
 
-void surface_clear(surface_t* surface)
+void srfc_clear(srfc_t* surface)
 {
     color32bpp_t black = {.rgb = 0x000000};
-    surface_fill(surface, black);
+    srfc_fill(surface, black);
 
     return;
 }
 
-void surface_copy(surface_t* ssurface, surface_t* dsurface, pair16_t src, pair16_t dst, size_t count)
+void srfc_copy(srfc_t* ssurface, srfc_t* dsurface, pair16_t src, pair16_t dst, size_t count)
 {
     assert(ssurface->bpp == 32);
     assert(dsurface->bpp == 32);
@@ -72,7 +72,7 @@ void surface_copy(surface_t* ssurface, surface_t* dsurface, pair16_t src, pair16
     return;
 }
 
-void surface_hzline(surface_t* surface, uint16_t x1, uint16_t x2, uint16_t y, color32bpp_t color)
+void srfc_hzline(srfc_t* surface, uint16_t x1, uint16_t x2, uint16_t y, color32bpp_t color)
 {
     assert(surface->bpp == 32);
 
@@ -83,7 +83,7 @@ void surface_hzline(surface_t* surface, uint16_t x1, uint16_t x2, uint16_t y, co
     if (x1 == x2)
     {
         pair16_t point = {.x = x1, .y = y};
-        surface_set_pxl(surface, point, color);
+        srfc_set_pxl(surface, point, color);
         return;
     }
 
@@ -102,7 +102,7 @@ void surface_hzline(surface_t* surface, uint16_t x1, uint16_t x2, uint16_t y, co
     return;
 }
 
-void surface_vtline(surface_t* surface, uint16_t y1, uint16_t y2, uint16_t x, color32bpp_t color)
+void srfc_vtline(srfc_t* surface, uint16_t y1, uint16_t y2, uint16_t x, color32bpp_t color)
 {
     assert(surface->bpp == 32);
 
@@ -113,7 +113,7 @@ void surface_vtline(surface_t* surface, uint16_t y1, uint16_t y2, uint16_t x, co
     if (y1 == y2)
     {
         pair16_t point = {.x = x, .y = y1};
-        surface_set_pxl(surface, point, color);
+        srfc_set_pxl(surface, point, color);
         return; 
     }
 
@@ -132,7 +132,7 @@ void surface_vtline(surface_t* surface, uint16_t y1, uint16_t y2, uint16_t x, co
     return;
 }
 
-void surface_line(surface_t* surface, pair16_t start, pair16_t end, color32bpp_t color)
+void srfc_line(srfc_t* surface, pair16_t start, pair16_t end, color32bpp_t color)
 {
     assert(surface->bpp == 32);
 
@@ -144,7 +144,7 @@ void surface_line(surface_t* surface, pair16_t start, pair16_t end, color32bpp_t
         uint16_t y1 = (start.y < end.y)? start.y : end.y;
         uint16_t y2 = (start.y > end.y)? start.y : end.y;
 
-        surface_vtline(surface, y1, y2, start.x, color);
+        srfc_vtline(surface, y1, y2, start.x, color);
         return;
     }
 
@@ -153,7 +153,7 @@ void surface_line(surface_t* surface, pair16_t start, pair16_t end, color32bpp_t
         uint16_t x1 = (start.x < end.x)? start.x: end.x;
         uint16_t x2 = (start.x > end.x)? start.x: end.x;
     
-        surface_hzline(surface, x1, x2, start.y, color);
+        srfc_hzline(surface, x1, x2, start.y, color);
         return;
     }
 
@@ -197,83 +197,22 @@ void surface_line(surface_t* surface, pair16_t start, pair16_t end, color32bpp_t
     return;
 }
 
-// void surface_line_thick(surface_t* surface, pair16_t start, pair16_t end, color32bpp_t color, uint16_t thickness)
-// {
-//     assert(surface->bpp == 32);
-
-//     assert(start.x < surface->res.x && start.y < surface->res.y);
-//     assert(end.x < surface->res.x && end.y < surface->res.y);
-
-//     assert(start.x != end.x && start.y != end.y);
-
-//     assert(thickness != 0);
-
-//     thickness = ((thickness % 2) == 0)? thickness + 1 : thickness;
-//     uint16_t offs = thickness / 2;
-
-//     uint16_t min_y = (start.y < end.y)? start.y : end.y;
-//     uint16_t max_y = (start.y > end.y)? start.y : end.y;
-
-//     uint16_t min_x = (start.x < end.x)? start.x : end.x;
-//     uint16_t max_x = (start.x > end.x)? start.x : end.x;
-
-//     double arctan = (uint16_t) ((max_x - min_x) / (max_y - min_y));
-
-//     pair16_t s = { 0 };
-//     pair16_t e = { 0 };
-
-//     for (uint16_t up_offs = 1; up_offs <= offs; up_offs++)
-//     {
-//         if (min_y < up_offs)
-//         {
-//             s = {.x = start.x + up_offs * , .y = 0};
-//             e = {.x = , .y = end.y - start.y}
-//         }
-//         else 
-//         {
-//             s = {.x = start.x, .y = start.y - up_offs}; 
-//             e = {.x = end.x, .y = end.y - up_offs};
-//         }
-
-//         surface_line(surface, s, e, color);
-//     }
-
-//     surface_line(surface, start, end, color);
-
-//     for (uint16_t down_offs = 1; down_offs <= offs; down_offs++)
-//     {
-//         if (max_y + down_offs > surface->res.y - 1)
-//         {
-
-//         }
-//         else 
-//         {
-//             s = {.x = start.x, .y = start.y + down_offs}; 
-//             e = {.x = end.x, .y = end.y + down_offs};
-//         }
-
-//         surface_line(surface, s, e, color);
-//     }
-
-//     return;
-// }   
-
-void surface_box(surface_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color)
+void srfc_box(srfc_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color)
 {
     assert(surface->bpp == 32);
 
     assert(bl.x <= tr.x);
     assert(bl.y <= tr.y);
 
-    surface_hzline(surface, bl.x, tr.x, tr.y, color);
-    surface_hzline(surface, bl.x, tr.x, bl.y, color);
-    surface_vtline(surface, tr.y, bl.y, bl.x, color);
-    surface_vtline(surface, tr.y, bl.y, tr.x, color);
+    srfc_hzline(surface, bl.x, tr.x, tr.y, color);
+    srfc_hzline(surface, bl.x, tr.x, bl.y, color);
+    srfc_vtline(surface, tr.y, bl.y, bl.x, color);
+    srfc_vtline(surface, tr.y, bl.y, tr.x, color);
 
     return;
 }
 
-void surface_box_thick_in(surface_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color, uint16_t thickness)
+void srfc_box_thick_in(srfc_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color, uint16_t thickness)
 {
     assert(surface->bpp == 32);
 
@@ -297,15 +236,15 @@ void surface_box_thick_in(surface_t* surface, pair16_t bl, pair16_t tr, color32b
     pair16_t pC = {.x = bl.x + thickness, .y = tr.y};
     pair16_t pD = {.x = tr.x - thickness, .y = bl.y}; 
 
-    surface_bar(surface, pA, tr, color);
-    surface_bar(surface, bl, pB, color);
-    surface_bar(surface, pD, tr, color);
-    surface_bar(surface, bl, pC, color);
+    srfc_bar(surface, pA, tr, color);
+    srfc_bar(surface, bl, pB, color);
+    srfc_bar(surface, pD, tr, color);
+    srfc_bar(surface, bl, pC, color);
 
     return;
 }
 
-void surface_bar(surface_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color)
+void srfc_bar(srfc_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color)
 {
     assert(surface->bpp == 32);
 
@@ -317,7 +256,7 @@ void surface_bar(surface_t* surface, pair16_t bl, pair16_t tr, color32bpp_t colo
 
     while (start_y <= end_y)
     {
-        surface_hzline(surface, bl.x, tr.x, start_y, color);
+        srfc_hzline(surface, bl.x, tr.x, start_y, color);
         start_y += 1;
     }
 
@@ -333,14 +272,14 @@ static const float Surface_cf_eps            = 0.05f;
 static const float Surface_cf_eps_small      = 0.1f;
 static const float Surface_cf_eps_very_small = 0.15f;
 
-void surface_cf(surface_t* surface, pair16_t center, uint16_t rad, color32bpp_t color)
+void srfc_cf(srfc_t* surface, pair16_t center, uint16_t rad, color32bpp_t color)
 {
     assert(surface->bpp == 32);
     assert(center.x < surface->res.x && center.y < surface->res.y);
 
     if (rad == 1)
     {
-        surface_set_pxl(surface, center, color);
+        srfc_set_pxl(surface, center, color);
         return;
     }
     else if (rad == 0)
@@ -377,7 +316,7 @@ void surface_cf(surface_t* surface, pair16_t center, uint16_t rad, color32bpp_t 
         if (dist2 > rad2_eps && dist2 < rad2)
         {
             pair16_t point = {.x = x, .y = y};
-            surface_set_pxl(surface, point, color);
+            srfc_set_pxl(surface, point, color);
         }
 
     next:
@@ -393,14 +332,14 @@ void surface_cf(surface_t* surface, pair16_t center, uint16_t rad, color32bpp_t 
     return;
 }
 
-void surface_circle(surface_t* surface, pair16_t center, uint16_t rad, color32bpp_t color)
+void srfc_circle(srfc_t* surface, pair16_t center, uint16_t rad, color32bpp_t color)
 {
     assert(surface->bpp == 32);
     assert(center.x < surface->res.x && center.y < surface->res.y);
 
     if (rad == 1)
     {
-        surface_set_pxl(surface, center, color);
+        srfc_set_pxl(surface, center, color);
         return;
     }
     else if (rad == 0)
@@ -428,7 +367,7 @@ void surface_circle(surface_t* surface, pair16_t center, uint16_t rad, color32bp
         if (distance2(x, y, x0, y0) <= rad2)
         {
             pair16_t point = {.x = x, .y = y};
-            surface_set_pxl(surface, point, color);
+            srfc_set_pxl(surface, point, color);
         }
 
     next:
@@ -444,7 +383,7 @@ void surface_circle(surface_t* surface, pair16_t center, uint16_t rad, color32bp
     return;
 }
 
-void surface_cf_thick_in(surface_t* surface, pair16_t center, uint16_t rad, uint16_t thickness, color32bpp_t color)
+void srfc_cf_thick_in(srfc_t* surface, pair16_t center, uint16_t rad, uint16_t thickness, color32bpp_t color)
 {
     assert(surface->bpp == 32);
     assert(center.x < surface->res.x && center.y < surface->res.y);
@@ -455,7 +394,7 @@ void surface_cf_thick_in(surface_t* surface, pair16_t center, uint16_t rad, uint
     uint16_t rad_in = rad - thickness;
     while (rad >= rad_in)
     {
-        surface_cf(surface, center, rad, color);
+        srfc_cf(surface, center, rad, color);
         rad -= 1;
     }
 

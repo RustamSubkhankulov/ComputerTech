@@ -38,6 +38,6 @@ typedef struct Surface
     pair16_t res;
     uint16_t bpp;
 
-} surface_t;
+} srfc_t;
 
 #endif // JOS_INC_GRAPHICS_H
