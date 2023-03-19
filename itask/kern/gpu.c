@@ -41,6 +41,8 @@ void init_gpu(void)
     Vga_dev.srfc_requested = false;
     Vga_dev.srfc_submitted = false;
 
+    Vga_dev.initialized = true;
+
     if (trace_gpu)
         cprintf("vga: initialization finished. \n");
 
@@ -379,4 +381,9 @@ void gpu_clear_display(void)
 {
     vbe_dispi_disable();
     vbe_dispi_enable(Vga_dev.flags);
+}
+
+bool gpu_ready(void)
+{
+    return Vga_dev.initialized;
 }

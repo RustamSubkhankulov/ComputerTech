@@ -9,7 +9,7 @@
 
 // Support for bpp != 32 is not implemented yet !!!
 
-void srfc_blit(srfc_t* surface, void* buffer, pair16_t src, uint16_t bpp, pair16_t dst, pair16_t copyres);
+void srfc_blit(srfc_t* surface, void* buffer, uint16_t bpp, pair16_t dst, pair16_t copyres);
 
 void srfc_set_pxl(srfc_t* surface, pair16_t coords, color32bpp_t color);
 

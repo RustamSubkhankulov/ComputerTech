@@ -16,9 +16,48 @@ static inline size_t offs_by_coords_32bpp(pair16_t coords, uint16_t xres)
     return (size_t) ((coords.y * xres + coords.x));
 }
 
-void srfc_blit(srfc_t* surface, void* buffer, pair16_t src, uint16_t bpp, pair16_t dst, pair16_t copyres)
-{
+/*
+    srfc_blit():
+                                        surface
+                                 _____________________   
+                                |                     |    
+     _ _ _ _   _ _ _ _          |  (dst)>______ _ _ __|_ _<
+    |_|_|_|_..._|_|_|_| =>  =>  | =>  =>|      |      |    copyres.y
+        void* buffer            |       |______| _ _ _|_ _<
+                                |       |      |      |
+                                |_______|______|______|
+                                        |      |
+                                        ^      ^
+                                        copyres.x
 
+*/
+
+void srfc_blit(srfc_t* surface, void* buffer, uint16_t bpp, pair16_t dst, pair16_t copyres)
+{
+    assert(surface->bpp == 32);
+
+    if (bpp != 32)
+        panic("srfc_blit: support fro bpp != 32 has not been implemented yet. \n");
+
+    assert(copyres.x < surface->res.x - dst.x);
+    assert(copyres.y < surface->res.y - dst.y);
+
+    pair16_t cur = dst;
+
+    for (size_t iter = 0; iter < copyres.x * copyres.y; iter++)
+    {
+        surface->buffer[offs_by_coords_32bpp(cur, surface->res.x)] = *((uint32_t*) buffer);
+    
+        cur.x += 1;
+
+        if (cur.x - dst.x >= copyres.x)
+        {
+            cur.x = dst.x;
+            cur.y += 1;
+        }
+    }
+
+    return;
 }
 
 void srfc_set_pxl(srfc_t* surface, pair16_t coords, color32bpp_t color)

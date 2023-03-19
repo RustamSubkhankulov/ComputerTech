@@ -39,10 +39,14 @@ typedef struct Vga_dev
     bool srfc_requested;
     bool srfc_submitted;
 
+    bool initialized;
+
 } vga_dev_t;
 
 void init_gpu(void);
 void test_gpu(void);
+
+bool gpu_ready(void);
 
 pair16_t gpu_get_display_res(void);
 int gpu_set_display_res(pair16_t res);
