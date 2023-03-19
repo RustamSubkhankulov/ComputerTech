@@ -31,3 +31,15 @@ settimer(interval) -> on_timer();
 
 модель подписывается на таймер,а внутри без всяких подписок внутри 
 классов модели вызываются методы апдейта
+
+poll in pollevents - wait for the shortest timeout
+
+- get time 
+- poll
+- get time again
+- calculate substract
+- poll again 
+
+std::random device, std::mt19937
+
+std::chrono

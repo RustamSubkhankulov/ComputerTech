@@ -7,17 +7,11 @@
 
 //---------------------------------------------------------
 
+#include "../subs/subs.hpp"
 #include "../model/model.hpp"
 #include "../view/view.hpp"
 
 //=========================================================
-
-class Subscriber_on_key
-{
-    virtual void on_key(int key) = 0;
-};
-
-//---------------------------------------------------------
 
 class Snake_controller: public Subscriber_on_key
 {

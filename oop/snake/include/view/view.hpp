@@ -10,6 +10,7 @@
 #include <string>
 #include <list>
 #include <functional>
+#include <utility>
 
 //=========================================================
 
@@ -19,6 +20,7 @@ class View
 
         View() { return; };
         std::list<std::function<void(int)>> subs_on_key {};
+        std::list<std::pair<int, std::function<void(int)>>> subs_on_timer {};
 
     public:
 
@@ -41,6 +43,12 @@ class View
         {
             subs_on_key.push_back(callback);
             return;
+        }
+
+        void set_on_timer(std::pair<int, std::function<void(int)>> callback)
+        {
+            subs_on_timer.push_back(callback);
+            return; 
         }
 
         virtual ~View() { return; };
