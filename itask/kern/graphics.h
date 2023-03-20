@@ -32,4 +32,7 @@ void srfc_cf(srfc_t* surface, pair16_t center, uint16_t rad, color32bpp_t color)
 void srfc_circle(srfc_t* surface, pair16_t center, uint16_t rad, color32bpp_t color);
 void srfc_cf_thick_in(srfc_t* surface, pair16_t center, uint16_t rad, uint16_t thickness, color32bpp_t color);
 
+void srfc_putchar(srfc_t* surface, char symb, pair16_t coords, color32bpp_t color, uint8_t ppb);
+void srfc_puts(srfc_t* surface, const char* string, pair16_t coords, color32bpp_t color, uint8_t ppb);
+
 #endif // JOS_KERN_GRAPHICS_H

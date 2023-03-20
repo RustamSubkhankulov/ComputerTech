@@ -201,7 +201,7 @@ void test_gpu(void)
     if (trace_gpu)
         cprintf("vga: tests started. \n");
     
-    int16_t rad = 1;
+    int16_t rad = 16;
     int16_t rad_inc = 1;
 
     while (1)
@@ -212,11 +212,11 @@ void test_gpu(void)
 
         srfc_clear(&surface);
 
-        // pair16_t tl = {.x = 0, .y = 0};
+        pair16_t tl = {.x = 0, .y = 0};
         // pair16_t br = {.x = Vga_dev.res.x - 1, .y = Vga_dev.res.y - 1};
 
-        // pair16_t tr = {.x = Vga_dev.res.x - 1, .y = 0}; 
-        // pair16_t bl = {.x = 0, .y = Vga_dev.res.y - 1};
+        pair16_t tr = {.x = Vga_dev.res.x - 1, .y = 0}; 
+        pair16_t bl = {.x = 0, .y = Vga_dev.res.y - 1};
 
         color32bpp_t lc = {.rgb = 0xFF0000}; 
 
@@ -226,10 +226,19 @@ void test_gpu(void)
         // srfc_hzline(&surface, 0, Vga_dev.res.x - 1, Vga_dev.res.y / 2, lc);
         // srfc_vtline(&surface, 0, Vga_dev.res.y - 1, Vga_dev.res.x / 2, lc);
 
-        // srfc_box_thick_in(&surface, bl, tr, lc, 10);
+        srfc_box_thick_in(&surface, bl, tr, lc, 16);
 
         pair16_t center = {.x = Vga_dev.res.x / 2, .y = Vga_dev.res.y / 2};
         srfc_cf(&surface, center, rad, lc);
+
+        pair16_t p1 = {.x = center.x - 12, .y = center.y + 12};
+        pair16_t p2 = {.x = center.x + 12, .y = center.y - 12};
+        
+        color32bpp_t pink  = {.rgb = 0x00FF4EAB};
+        color32bpp_t white = {.rgb = 0x00FFFFFF};
+
+        srfc_bar(&surface, p1, p2, pink);
+        srfc_puts(&surface, "Teper u menya est' pervoye", tl, white, 10);
 
         err = gpu_submit_surface(&surface);
         assert(err == 0);
@@ -242,7 +251,7 @@ void test_gpu(void)
         if (rad == 0) rad_inc = 1;
         if (rad == 50) rad_inc = -1;
 
-        int ct = 10000000;
+        int ct = 100000000;
         while (ct-- != 0);
     }
 
