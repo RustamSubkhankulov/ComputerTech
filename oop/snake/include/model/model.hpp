@@ -8,6 +8,7 @@
 //---------------------------------------------------------
 
 #include "../vector/vector.hpp"
+#include "../subs/subs.hpp"
 
 //=========================================================
 
@@ -18,8 +19,68 @@ using Coords_list = std::list<Coords>;
 
 //=========================================================
 
+class Snake_controller;
+class Rabbit;
+class Snake;
+
+class Model : public Subscriber_on_timer
+{
+    private:
+
+        bool model_updated = false;
+        bool game_ended = false;
+
+    public:
+
+        list<Rabbit> rabbits{};
+        list<Snake> snakes{};
+
+        Model() 
+        {
+            Subscriber_on_timer::timeout = 300U;
+            subscribe_on_timer();
+        }
+
+        Model            (const Model& that) = default;
+        Model& operator= (const Model& that) = default;
+        ~Model()                             = default;
+
+        void generate_rabbits(const Coords& field_size, const int rnum);
+        void generate_snake(const Coords& field_size, Coords& start_pos, Snake_controller* controller);
+
+        bool model_is_updated() const
+        {
+            return model_updated;
+        }
+
+        void model_aknowledge_update()
+        {
+            model_updated = false;
+        }
+
+        bool game_is_ended() const
+        {
+            return game_ended;
+        }
+
+    private:
+
+        void subscribe_on_timer();
+        void on_timer() override;
+        void update(const Coords& field_size);
+        void process_events();
+};
+
+//---------------------------------------------------------
+
 class Rabbit
 {
+    friend class Model;
+
+    unsigned update_ct = 0;
+    enum : unsigned { UPDATE_FREQ = 10U };
+    bool alive = true;
+
     Coords coords_{};
 
     public:
@@ -49,14 +110,19 @@ class Rabbit
             coords_ = coords;
         }
 
-        void update(const Coords& field_size);
+        bool is_alive() const
+        {
+            return alive;
+        }
+
+        void update(const Coords& field_size, const list<Rabbit>& rabbits);
 };
 
 //---------------------------------------------------------
 
 class Snake
 {
-    Coords_list coords_list_{};
+    friend class Model;
 
     enum class Snake_dir
     {
@@ -64,10 +130,20 @@ class Snake
     };
 
     Snake_dir direction_ = Snake_dir::RIGHT;
+    Coords_list coords_list_{};
+    unsigned score = 0;
+
+    unsigned make_longer_ct = 0;
 
     public:
 
-        static constexpr int Snake_len = 7;
+        enum Update_res
+        {
+            OK = 0,
+            LOSE = 1
+        };
+
+        static constexpr unsigned Snake_start_len = 7;
 
         Snake(const Coords_list& coords_list)
         {
@@ -94,7 +170,17 @@ class Snake
             coords_list_ = coords_list;
         }
 
-        void update(const Coords& field_size);
+        unsigned get_score() const
+        {
+            return score;
+        }
+
+        void make_longer()
+        {
+            make_longer_ct += 1;
+        }
+
+        Snake::Update_res update(const Coords& field_size);
 
         void turn_left();
         void turn_right();
@@ -102,21 +188,3 @@ class Snake
 
 //---------------------------------------------------------
 
-class Snake_controller;
-
-class Model
-{
-    public:
-
-        list<Rabbit> rabbits{};
-        list<Snake> snakes{};
-
-        Model()                              = default;
-        Model            (const Model& that) = default;
-        Model& operator= (const Model& that) = default;
-        ~Model()                             = default;
-
-        void update(const Coords& field_size);
-        void generate_rabbits(const Coords& field_size, const int rnum);
-        void generate_snake(const Coords& field_size, Snake_controller* controller);
-};

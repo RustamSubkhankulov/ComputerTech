@@ -65,28 +65,6 @@ class Snake_controller: public Subscriber_on_key
 
 //---------------------------------------------------------
 
-class Snake_controller_AI: public Snake_controller
-{
-    public:
-
-        Snake_controller_AI() 
-        {
-            View* view = View::get_view();
-            view->set_on_key(std::bind(&Snake_controller_AI::on_key, this, std::placeholders::_1));
-        }
-
-        Snake_controller_AI(Snake* snake, Model* model):
-        Snake_controller(snake, model)
-        {
-            View* view = View::get_view();
-            view->set_on_key(std::bind(&Snake_controller_AI::on_key, this, std::placeholders::_1));
-        }
-
-        void on_key(int key) override;
-};
-
-//---------------------------------------------------------
-
 class Snake_controller_human: public Snake_controller
 {
     public:

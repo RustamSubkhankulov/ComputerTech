@@ -4,10 +4,15 @@
 
 class Subscriber_on_key
 {
-    virtual void on_key(int key) = 0;
+    protected:
+
+        virtual void on_key(int key) = 0;
 };
 
 class Subscriber_on_timer
 {
-    virtual void on_timer() = 0;
+    protected:
+
+        unsigned timeout = 0;
+        virtual void on_timer() = 0;
 };

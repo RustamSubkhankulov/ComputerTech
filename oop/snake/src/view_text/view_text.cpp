@@ -1,10 +1,14 @@
 #include <iostream>
+#include <algorithm>
+#include <iterator>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <climits>
 #include <poll.h>
 
 //---------------------------------------------------------
@@ -31,19 +35,16 @@ static const int CSI_underline_off = 24;
 
 //---------------------------------------------------------
 
-static const int Poll_timeout_ms = 100;
-
-//---------------------------------------------------------
-
 static bool Wnsz_renew_needed = true;
 // static global variable since static functions cannot be declared as friend w/o forward declaration
+
+static bool Wn_resized = true;
 
 //---------------------------------------------------------
 
 static const char Rabbit_symb = 'R';
 
-static const char Snake_symb      = 'S';
-// static const char Snake_symb_head = 'H';
+static const char Snake_symb = 'S';
 
 //=========================================================
 
@@ -108,7 +109,7 @@ void View_text::set_attr(enum View_text::Color fg, enum View_text::Color bg,
 
 //---------------------------------------------------------
 
-void View_text::turn_off_carriage()
+void View_text::turn_off_carriage() const
 {
     printf("\e[?25l");
     fflush(stdout);
@@ -116,7 +117,7 @@ void View_text::turn_off_carriage()
 
 //---------------------------------------------------------
 
-void View_text::turn_on_carriage()
+void View_text::turn_on_carriage() const
 {
     printf("\e[?25h");
     fflush(stdout);
@@ -139,7 +140,7 @@ void View_text::set_sighandler()
 
 //---------------------------------------------------------
 
-void View_text::restore_sighandler()
+void View_text::restore_sighandler() const
 {
     int err = sigaction(SIGWINCH, &oldact_, NULL);
     if (err != 0)
@@ -155,6 +156,40 @@ static void sighandler(int signum)
 {
     View_text* self = dynamic_cast<View_text*>(View::get_view());
     Wnsz_renew_needed = true;
+    Wn_resized = true;
+}
+
+//---------------------------------------------------------
+
+int View_text::get_poll_timeout()
+{
+    if (subs_on_timer.size() == 0)
+        return -1;
+
+    int min = INT_MAX;
+
+    for (const auto& sub : subs_on_timer)
+    {
+        if ((int) sub.first < min)
+            min = (int) sub.first;
+    }
+
+    return min;
+}
+
+//---------------------------------------------------------
+
+timeval View_text::get_cur_time() const
+{
+    struct timeval cur = { 0 };
+    int err = gettimeofday(&cur, NULL);
+    if (err != 0)
+    {
+        fprintf(stderr, "gettimeofday() failed: %s \n", strerror(errno));
+        assert(false);
+    }
+
+    return cur;
 }
 
 //---------------------------------------------------------
@@ -164,33 +199,99 @@ void View_text::run_loop()
 
     while (1)
     {
-        cls();
-        draw_frame();
+        get_winsize(); // renew if there was resize 
+                       // we need to realloc shots' arrays
 
+        timeval start = get_cur_time();
+
+        int timeout = get_poll_timeout();
+        poll_events(timeout);
+
+        timeval end = get_cur_time();
+        timeval elapsed = { 0 };
+        timersub(&end, &start, &elapsed);
+        
+        serve_subs_on_timer(elapsed);
+        
         Model* model = get_model();
-        if (model != nullptr);
+        assert(model != nullptr);
+
+        bool model_updated = model->model_is_updated();
+
+        if (model_updated || Wn_resized)
         {
-            model->update(get_winsize());
-            draw_snakes(model);
-            draw_rabbits(model);
+            if (model_updated)
+                model->model_aknowledge_update();
+            
+            draw_frame();
+
+            if (model->game_is_ended())
+            {
+                draw_lose_msg();
+            }
+            else 
+            {
+                draw_rabbits(model);
+                draw_snakes(model);
+            }
         }
 
-        poll_events();
-
-        usleep(100000);
+        if (exit == true)
+            return;
     }
 }
 
 //---------------------------------------------------------
 
-void View_text::poll_events()
+struct Sub_remove_predicate
 {
-    poll_on_key();
+    bool operator() (on_timer_callback callback)
+    {
+        return (callback.first == 0);
+    }
+};
+
+void View_text::serve_subs_on_timer(const timeval& elapsed)
+{
+    unsigned elapsed_ms = elapsed.tv_sec * 1000 + elapsed.tv_usec / 1000;
+
+    size_t count = subs_on_timer.size();
+
+    for (auto& sub : subs_on_timer)
+    {
+        if (count == 0)
+            break;
+
+        if (elapsed_ms < sub.first)
+            sub.first -= elapsed_ms;
+        else 
+        {
+            sub.first = 0;
+            sub.second();
+        }
+
+        count -= 1;
+    }
+
+    auto remove = std::find_if(subs_on_timer.begin(), subs_on_timer.end(), Sub_remove_predicate());
+
+    while ((remove) != subs_on_timer.end())
+    {
+        subs_on_timer.erase(remove);
+        remove = std::find_if(subs_on_timer.begin(), subs_on_timer.end(), Sub_remove_predicate());
+    }
 }
 
 //---------------------------------------------------------
 
-void View_text::poll_on_key()
+void View_text::poll_events(int timeout)
+{
+    poll_on_key(timeout);
+}
+
+//---------------------------------------------------------
+
+void View_text::poll_on_key(int timeout)
 {
     struct pollfd req = {.fd = STDIN_FILENO, .events = POLLIN, .revents = 0 };
 
@@ -199,7 +300,7 @@ void View_text::poll_on_key()
 
     do 
     {
-        err = poll(&req, 1, Poll_timeout_ms);
+        err = poll(&req, 1, timeout);
 
     } while (err == -1 && errno == EINTR);
 
@@ -222,6 +323,11 @@ void View_text::poll_on_key()
         for (auto func : subs_on_key)
         {
             func((int) sym);
+        }
+
+        if (sym == 'q')
+        {
+            exit = true;
         }
     }
 }
@@ -288,6 +394,14 @@ Vector View_text::get_winsize() const
 
 //---------------------------------------------------------
 
+void View_text::set_location(const Vector& coord)
+{
+    printf("\e[%lu;%luH", (size_t) coord.y(), (size_t) coord.x());
+    fflush(stdout);
+}
+
+//---------------------------------------------------------
+
 void View_text::putxy(const char sym, const Vector& coord)
 {
     printf("\e[%lu;%luH", (size_t) coord.y(), (size_t) coord.x());
@@ -343,7 +457,6 @@ void View_text::draw_frame()
     set_attr(MAGENTA, BLACK, true, false, false);
     hline(1, 1, cols, '=');
 
-    // hline(2, 1, cols, ' ');
     int fg_col = RED;
     for (size_t ncol = 1; ncol <= cols; ncol++)
     {
@@ -384,4 +497,48 @@ void View_text::draw_frame()
     std::string author_str{"by Rustamchik"};
     ncol = cols - author_str.size() - Rgt_padding;
     printxy(author_str, Vector{(ssize_t) ncol, (ssize_t) rows - 1});
+
+    draw_results((ssize_t) (Lft_padding + 1), (ssize_t) (rows - 1));
+}
+
+//---------------------------------------------------------
+
+void View_text::draw_results(size_t ncol, size_t nrow)
+{    
+    Model* model = get_model();
+    assert(model != nullptr);
+
+    std::string str{"RESULTS: "};
+
+    unsigned ct = 0;
+
+    for (const auto& snake : model->snakes)
+    {
+        str += "#";
+        str += std::to_string(ct);
+
+        str += " SCORE: ";
+        str += std::to_string(snake.get_score());
+
+        ct += 1;
+    }
+
+    set_attr(CYAN, BLACK, false, false, false);
+    printxy(str, Vector{(ssize_t) ncol, (ssize_t) nrow});
+}
+
+//---------------------------------------------------------
+
+void View_text::draw_lose_msg()
+{
+    Vector wnsz = get_winsize_real();
+    size_t cols = (size_t) wnsz.x();
+    size_t rows = (size_t) wnsz.y();
+
+    std::string lose_msg{"GAME OVER"};
+    size_t ncol = (cols - lose_msg.size()) / 2;
+    size_t nrow = rows / 2;
+
+    set_attr(RED, BLACK, true, true, true);
+    printxy(lose_msg, Vector{(ssize_t) ncol, (ssize_t) nrow});
 }

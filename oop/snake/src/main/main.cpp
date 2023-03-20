@@ -22,11 +22,15 @@ int main(void)
 
     Snake_controller_human human_ctrl {};
 
-    model.generate_snake(field_size, &human_ctrl);
+    Coords snake_start_pos{field_size.x() / 2, field_size.y() / 2};
+
+    model.generate_snake(field_size, snake_start_pos, &human_ctrl);
     model.generate_rabbits(field_size, 10);
 
     view->set_model(&model);
     view->run_loop();
+
+    delete view;
 
     return 0;
 }
