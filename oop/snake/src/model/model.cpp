@@ -124,14 +124,45 @@ void Rabbit::update(const Coords& field_size, const list<Rabbit>& rabbits)
         }
     }
 
+    View::get_view()->field_sector_freed(coords_);
+
     coords_ += dir;
     return;
 }
 
 //---------------------------------------------------------
 
+Coords Snake::snake_dir_to_coords()
+{
+    Coords dir{};
+
+    if (direction_ == Snake_dir::DOWN)
+    {
+        dir = {0, 1};
+    }
+    else if (direction_ == Snake_dir::RIGHT)
+    {   
+        dir = {1, 0};
+    }
+    else if (direction_ == Snake_dir::UP)
+    {
+        dir = {0, -1};
+    }
+    else if (direction_ == Snake_dir::LEFT)
+    {
+        dir = {-1, 0};
+    }
+
+    return dir;
+}
+
+//---------------------------------------------------------
+
 Snake::Update_res Snake::update(const Vector& field_size)
 {
+    if (alive == false)
+        return Snake::Update_res::LOSE;
+
     Coords head = coords_list_.back();
     
     Coords dir{};
@@ -164,6 +195,7 @@ Snake::Update_res Snake::update(const Vector& field_size)
 
     if (dir.x() == 0 && dir.y() == 0)
     {
+        alive = false;
         return Snake::Update_res::LOSE;
     }
 
@@ -173,12 +205,14 @@ Snake::Update_res Snake::update(const Vector& field_size)
     {
         if (coords.x() == new_head.x() && coords.y() == new_head.y())
         {
+            alive = false;
             return Snake::Update_res::LOSE;
         }    
     }
 
     if (make_longer_ct == 0)
     {
+        View::get_view()->field_sector_freed(coords_list_.front());
         coords_list_.pop_front();
     }
     else 
@@ -203,13 +237,28 @@ void Model::update(const Vector& field_size)
     
     for (Snake& snake : snakes)
     {
-        Snake::Update_res res = snake.update(field_size);
-        if (res == Snake::Update_res::LOSE)
+        snake.update(field_size);
+
+        // if (res == Snake::Update_res::LOSE)
+        // {
+        //     game_ended = true;
+        //     break;
+        // }   
+    }
+
+    unsigned alive_ct = 0;
+
+    for (Snake& snake : snakes)
+    {
+        if (snake.is_alive() == true)
         {
-            game_ended = true;
+            alive_ct += 1;
             break;
         }
     }
+
+    if (alive_ct == 0)
+        game_ended = true;
 
     process_events();
 

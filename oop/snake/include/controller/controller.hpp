@@ -13,7 +13,7 @@
 
 //=========================================================
 
-class Snake_controller: public Subscriber_on_key
+class Snake_controller
 {
     private:
 
@@ -57,25 +57,88 @@ class Snake_controller: public Subscriber_on_key
         }
 
         Snake* get_snake() { return snake_; }
-
         Model* get_model() { return model_; }
-
-        virtual void on_key(int key) { return; };
 };
 
 //---------------------------------------------------------
 
-class Snake_controller_human: public Snake_controller
+class Snake_controller_AI : public Snake_controller, public Subscriber_on_timer
 {
     public:
 
-        Snake_controller_human()
+        Snake_controller_AI(unsigned timeout):
+        Subscriber_on_timer(timeout)
+        {
+            subscribe_on_timer();
+        }
+
+        Snake_controller_AI(unsigned timeout, Snake* snake, Model* model):
+        Snake_controller(snake, model),
+        Subscriber_on_timer(timeout)
+        {
+            subscribe_on_timer();
+        }
+
+        void on_timer() override;
+
+    private:
+
+        void subscribe_on_timer();
+};
+
+//---------------------------------------------------------
+
+class Snake_controller_smart_AI : public Snake_controller_AI
+{
+    public:
+
+        Snake_controller_smart_AI():
+        Snake_controller_AI(100U)
+        { }
+
+        Snake_controller_smart_AI(Snake* snake, Model* model):
+        Snake_controller_AI(100U, snake, model) 
+        { }
+
+        void on_timer() override;
+};
+
+//---------------------------------------------------------
+
+class Snake_controller_dumb_AI : public Snake_controller_AI
+{
+    public:
+
+        Snake_controller_dumb_AI():
+        Snake_controller_AI(100U)
+        { }
+
+        Snake_controller_dumb_AI(Snake* snake, Model* model):
+        Snake_controller_AI(100U, snake, model) 
+        { }
+
+        void on_timer() override;
+};
+
+//---------------------------------------------------------
+
+class Snake_controller_human: public Snake_controller, public Subscriber_on_key
+{
+    char lb_, rb_;
+
+    public:
+
+        Snake_controller_human(char lb, char rb):
+        lb_(lb),
+        rb_(rb)
         {
             View* view = View::get_view();
             view->set_on_key(std::bind(&Snake_controller_human::on_key, this, std::placeholders::_1));
         }
 
-        Snake_controller_human(Snake* snake, Model* model):
+        Snake_controller_human(char lb, char rb, Snake* snake, Model* model):
+        lb_(lb),
+        rb_(rb),
         Snake_controller(snake, model)
         {
             View* view = View::get_view();

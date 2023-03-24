@@ -224,18 +224,22 @@ void View_text::run_loop()
             if (model_updated)
                 model->model_aknowledge_update();
             
-            draw_frame();
+            if (Wn_resized == true)
+            {
+                draw_frame();
+            }
 
+            draw_rabbits(model);
+            draw_snakes(model);
+            draw_results();
+        
             if (model->game_is_ended())
             {
                 draw_lose_msg();
             }
-            else 
-            {
-                draw_rabbits(model);
-                draw_snakes(model);
-            }
         }
+
+        Wn_resized = false;
 
         if (exit == true)
             return;
@@ -355,6 +359,11 @@ void View_text::draw_snakes(Model* model)
 
     for (const Snake& snake : model->snakes)
     {
+        if (snake.is_alive())
+            set_attr(BLACK, GREEN, 1, 0, 0);
+        else 
+            set_attr(BLACK, RED, 1, 0, 0);
+
         Coords_list coords_list = snake.get_coords_list();
 
         for (const Coords& coords : coords_list)
@@ -449,6 +458,22 @@ void View_text::cls()
 
 //---------------------------------------------------------
 
+void View_text::draw_bg()
+{
+    Vector wnsz = get_winsize_real();
+    size_t cols = (size_t) wnsz.x();
+    size_t rows = (size_t) wnsz.y();
+
+    set_attr(BROWN, BROWN, false, false, false);
+    
+    for (size_t nrow = 4; nrow < rows - 2; nrow++)
+    {
+        hline(nrow, 2, cols - 1, ' ');
+    }
+}
+
+//---------------------------------------------------------
+
 void View_text::draw_frame()
 {
     Vector wnsz = get_winsize_real();
@@ -475,11 +500,7 @@ void View_text::draw_frame()
     set_attr(MAGENTA, BLACK, true, false, false);
     hline(3, 1, cols, '=');
 
-    set_attr(BROWN, BROWN, false, false, false);
-    for (size_t nrow = 4; nrow < rows - 2; nrow++)
-    {
-        hline(nrow, 1, cols, ' ');
-    }
+    draw_bg();
 
     set_attr(MAGENTA, BLACK, true, false, false);
     hline(rows - 2, 1, cols, '=');
@@ -499,33 +520,51 @@ void View_text::draw_frame()
     ncol = cols - author_str.size() - Rgt_padding;
     printxy(author_str, Vector{(ssize_t) ncol, (ssize_t) rows - 1});
 
-    draw_results((ssize_t) (Lft_padding + 1), (ssize_t) (rows - 1));
+    draw_results();
 }
 
 //---------------------------------------------------------
 
-void View_text::draw_results(size_t ncol, size_t nrow)
-{    
+void View_text::draw_results()
+{   
+    Vector wnsz = get_winsize_real();
+    size_t cols = (size_t) wnsz.x();
+    size_t rows = (size_t) wnsz.y();
+
+    size_t ncol = Lft_padding + 1;
+    size_t nrow = rows - 1;
+
     Model* model = get_model();
     assert(model != nullptr);
 
     std::string str{"RESULTS: "};
+    set_attr(CYAN, BLACK, false, false, false);
+    printxy(str, Vector{(ssize_t) ncol, (ssize_t) nrow});
+    ncol += str.size();
 
     unsigned ct = 0;
 
     for (const auto& snake : model->snakes)
     {
-        str += "#";
-        str += std::to_string(ct);
+        std::string cur{};
 
-        str += " SCORE: ";
-        str += std::to_string(snake.get_score());
+        if (snake.is_alive())
+            set_attr(GREEN, BLACK, false, false, false);
+        else 
+            set_attr(RED, BLACK, false, false, false);
+
+        cur += "#";
+        cur += std::to_string(ct);
+
+        cur += " SCORE: ";
+        cur += std::to_string(snake.get_score());
+        cur += ' ';
 
         ct += 1;
-    }
 
-    set_attr(CYAN, BLACK, false, false, false);
-    printxy(str, Vector{(ssize_t) ncol, (ssize_t) nrow});
+        printxy(cur, Vector{(ssize_t) ncol, (ssize_t) nrow});
+        ncol += cur.size();
+    }
 }
 
 //---------------------------------------------------------
@@ -542,4 +581,13 @@ void View_text::draw_lose_msg()
 
     set_attr(RED, BLACK, true, true, true);
     printxy(lose_msg, Vector{(ssize_t) ncol, (ssize_t) nrow});
+}
+
+//---------------------------------------------------------
+
+void View_text::field_sector_freed(const Coords& coords)
+{
+    Coords real_coords{coords.x() + Lft_padding + 1, coords.y() + Top_padding + 1};
+    set_attr(BROWN, BROWN, false, false, false);
+    putxy(' ', real_coords);
 }

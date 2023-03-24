@@ -11,6 +11,11 @@ class Subscriber_on_key
 
 class Subscriber_on_timer
 {
+    public:
+
+        Subscriber_on_timer(unsigned timeout_):
+        timeout(timeout_) {}
+
     protected:
 
         unsigned timeout = 0;

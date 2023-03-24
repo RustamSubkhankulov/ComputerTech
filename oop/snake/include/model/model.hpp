@@ -35,9 +35,9 @@ class Model : public Subscriber_on_timer
         list<Rabbit> rabbits{};
         list<Snake> snakes{};
 
-        Model() 
+        Model():
+        Subscriber_on_timer(100U)
         {
-            Subscriber_on_timer::timeout = 300U;
             subscribe_on_timer();
         }
 
@@ -120,9 +120,14 @@ class Rabbit
 
 //---------------------------------------------------------
 
+class Snake_controller_smart_AI;
+class Snake_controller_dumb_AI;
+
 class Snake
 {
     friend class Model;
+    friend class Snake_controller_smart_AI;
+    friend class Snake_controller_dumb_AI;
 
     enum class Snake_dir
     {
@@ -132,6 +137,7 @@ class Snake
     Snake_dir direction_ = Snake_dir::RIGHT;
     Coords_list coords_list_{};
     unsigned score = 0;
+    bool alive = true;
 
     unsigned make_longer_ct = 0;
 
@@ -175,6 +181,11 @@ class Snake
             return score;
         }
 
+        bool is_alive() const
+        {
+            return alive;
+        }
+
         void make_longer()
         {
             make_longer_ct += 1;
@@ -184,7 +195,11 @@ class Snake
 
         void turn_left();
         void turn_right();
+
+    private:
+
+        Coords snake_dir_to_coords();
+
 };
 
 //---------------------------------------------------------
-

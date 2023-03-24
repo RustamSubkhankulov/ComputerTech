@@ -31,12 +31,17 @@ int main(const int argc, const char** argv)
     Model model{};
     Vector field_size = view->get_winsize();
 
-    Snake_controller_human human_ctrl {};
+    Snake_controller_human human_ctrl1 {'a', 'd'};
+    // Snake_controller_human human_ctrl2 {'j', 'l'};
 
-    Coords snake_start_pos{field_size.x() / 2, field_size.y() / 2};
+    Snake_controller_dumb_AI dumb{};
 
-    model.generate_snake(field_size, snake_start_pos, &human_ctrl);
-    model.generate_rabbits(field_size, 10);
+    Coords snake_start_pos1{field_size.x() / 2, field_size.y() / 2};
+    Coords snake_start_pos2{snake_start_pos1.x(), snake_start_pos1.y() + 5};
+
+    model.generate_snake(field_size, snake_start_pos1, &human_ctrl1);
+    model.generate_snake(field_size, snake_start_pos2, &dumb);
+    model.generate_rabbits(field_size, 100);
 
     view->set_model(&model);
     view->run_loop();

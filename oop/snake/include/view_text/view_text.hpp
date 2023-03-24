@@ -23,10 +23,6 @@ class View_text: public View
 
         bool exit = false;
 
-        struct Field;
-        Field* prev_shot = nullptr;
-        Field* cur_shot = nullptr;
-
     public: 
 
         enum Color : int 
@@ -63,7 +59,7 @@ class View_text: public View
                 set_location(Vector{1,1});
                 termios_restore_conf();
             }
-
+        void field_sector_freed(const Coords& coords) override;
         Vector get_winsize() const override;
 
         void run_loop() override;
@@ -88,7 +84,7 @@ class View_text: public View
 
         Vector get_winsize_real() const;
         void draw_frame();
-        void draw_results(size_t ncol, size_t nrow);
+        void draw_results();
         void draw_lose_msg();
         
         void set_location(const Vector& coord);
@@ -116,9 +112,7 @@ class View_text: public View
         void termios_change_conf();
         void termios_restore_conf();
 
+        void draw_bg();
         void draw_rabbits(Model* model);
         void draw_snakes(Model* model);
-
-        void alloc_shots();
-        void realloc_shots();
 };
