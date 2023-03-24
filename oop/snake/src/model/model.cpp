@@ -14,6 +14,7 @@
 using std::rand;
 
 const static unsigned Score_per_rabbit = 100;
+const static unsigned Score_per_snake  = 500;
 
 //=========================================================
 
@@ -277,9 +278,9 @@ struct Rabbit_remove_predicate
 
 void Model::process_events()
 {
-    for (auto& snake : snakes)
+    for (auto snake = snakes.begin(); snake != snakes.end(); snake++)
     {
-        Coords_list snake_coord_list = snake.get_coords_list();
+        Coords_list snake_coord_list = snake->get_coords_list();
         Coords snake_head = snake_coord_list.back();
 
         for (auto& rabbit : rabbits)
@@ -290,8 +291,27 @@ void Model::process_events()
              && rabbit_coords.y() == snake_head.y())
             {
                 rabbit.alive = false;
-                snake.score += Score_per_rabbit;
-                snake.make_longer();
+                snake->score += Score_per_rabbit;
+                snake->make_longer();
+            }
+        }
+
+        for (auto other_snake = snakes.begin(); other_snake != snakes.end(); other_snake++)
+        {
+            if (other_snake == snake)
+                continue;
+
+            Coords_list other_snake_coord_list = other_snake->get_coords_list();
+            Coords other_snake_head = other_snake_coord_list.back();
+
+            for (auto& coords : snake_coord_list)
+            {
+                if (coords.x() == other_snake_head.x() 
+                 && coords.y() == other_snake_head.y())
+                {
+                    other_snake->alive = false;
+                    snake->score += Score_per_snake;
+                }
             }
         }
     }
