@@ -23,6 +23,10 @@ class View_text: public View
 
         bool exit = false;
 
+        struct Field;
+        Field* prev_shot = nullptr;
+        Field* cur_shot = nullptr;
+
     public: 
 
         enum Color : int 
@@ -47,8 +51,8 @@ class View_text: public View
                 termios_change_conf();
             }
 
-        View_text            (const View_text& that) = default;
-        View_text& operator= (const View_text& that) = default;
+        View_text            (const View_text& that) = delete;
+        View_text& operator= (const View_text& that) = delete;
 
         ~View_text() override
             {
@@ -65,6 +69,15 @@ class View_text: public View
         void run_loop() override;
 
     private:
+
+        struct Field
+        {
+            char sym;
+            enum Color color;
+
+            bool operator== (const Field& that) { return ((sym == that.sym) && (color == that.color)); };
+            bool operator!= (const Field& that) { return ((sym != that.sym) || (color != that.color)); };
+        };
 
         void poll_events(int timeout);
         void poll_on_key(int timeout);
@@ -105,4 +118,7 @@ class View_text: public View
 
         void draw_rabbits(Model* model);
         void draw_snakes(Model* model);
+
+        void alloc_shots();
+        void realloc_shots();
 };

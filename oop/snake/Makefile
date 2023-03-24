@@ -15,6 +15,9 @@ INC_DIR = include
 
 USE_DEBUG_FLAGS = 0
 
+# flags needed to use with sfml
+SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+
 ifeq ($(USE_DEBUG_FLAGS), 1)
 
 	DEBUG_FLAGS = 												\
@@ -77,7 +80,7 @@ build: snake
 #----------------------------------------------------------
 
 snake: $(OBJ)
-	$(CXX) $(^) -o $(@)
+	$(CXX) $(^) -o $(@) $(SFML_FLAGS)
 
 define build_rule =
 $(OBJ_DIR)/$(1).o: $(call SRC_PATH,$(1)) 

@@ -10,6 +10,7 @@
 #include <cassert>
 #include <climits>
 #include <poll.h>
+#include <stdexcept>
 
 //---------------------------------------------------------
 
@@ -58,7 +59,7 @@ void View_text::termios_change_conf()
     if (err != 0)
     {
         fprintf(stderr, "tcgetattr() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"tcgetattr() failed"};
     }
 
     struct termios attr_raw = this->termis_attr;
@@ -68,7 +69,7 @@ void View_text::termios_change_conf()
     if (err != 0)
     {
         fprintf(stderr, "tcsetattr() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"tcsetattr() failed"};
     }
 }
 
@@ -80,7 +81,7 @@ void View_text::termios_restore_conf()
     if (err != 0)
     {
         fprintf(stderr, "tcsetattr() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"tcsetattr() failed"};
     }
 }
 
@@ -134,7 +135,7 @@ void View_text::set_sighandler()
     if (err != 0)
     {
         fprintf(stderr, "sigaction() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"sigaction() failed"};
     }
 }
 
@@ -146,7 +147,7 @@ void View_text::restore_sighandler() const
     if (err != 0)
     {
         fprintf(stderr, "sigaction() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"sigaction() failed"};
     }
 }
 
@@ -186,7 +187,7 @@ timeval View_text::get_cur_time() const
     if (err != 0)
     {
         fprintf(stderr, "gettimeofday() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"gettimeofday() failed"};
     }
 
     return cur;
@@ -307,7 +308,7 @@ void View_text::poll_on_key(int timeout)
     if (err == -1)
     {
         fprintf(stderr, "poll() failed: %s \n", strerror(errno));
-        assert(false);
+        throw std::runtime_error{"poll() failed"};
     }
 
     if (req.revents & POLL_IN)
@@ -317,7 +318,7 @@ void View_text::poll_on_key(int timeout)
         if (err == -1)
         {
             fprintf(stderr, "read() failed: %s \n", strerror(errno));
-            assert(false);
+            throw std::runtime_error{"read() failed"};
         }
 
         for (auto func : subs_on_key)
@@ -374,7 +375,7 @@ Vector View_text::get_winsize_real() const
         if (err < 0)
         {
             fprintf(stderr, "iocctl() failed: %s \n", strerror(errno));
-            assert(false);
+            throw std::runtime_error{"iocctl() failed"};
         }
 
         wnsz_ = Vector{(ssize_t) wnsz.ws_col, (ssize_t) wnsz.ws_row};

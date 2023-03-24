@@ -43,3 +43,20 @@ poll in pollevents - wait for the shortest timeout
 std::random device, std::mt19937
 
 std::chrono
+
+//===============================================
+22.03.2023
+//===============================================
+
+- двойная буферизация 
+
+змеи боты
+- тупой и умный
+- два human controller
+
+install sfml 
+
+заменить рисование на sfml 
+
+sf::sprite
+sf::texture
