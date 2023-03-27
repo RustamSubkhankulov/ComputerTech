@@ -187,9 +187,10 @@ i386_init(void) {
 
     init_gpu();
     if (trace_init) cprintf("VGA device initialized.\n");
-    test_gpu();
+    // test_gpu();
 
-    // tetris();
+    int res = tetris();
+    if (res < 0) panic("tetris(): %i \n", res);
 
     // Break to monitor
     assert(false);

@@ -22,8 +22,8 @@ typedef struct Vga_dev
 {
     pci_dev_general_t pci_dev_general;
     
-    uint32_t* fb;
-    void* mmio;
+    volatile uint32_t* fb;
+    volatile void* mmio;
 
     pair16_t res;
     uint16_t bpp;
@@ -31,12 +31,16 @@ typedef struct Vga_dev
     pair16_t vres;
     pair16_t voffs;
 
-    pair16_t display2coords;
-    size_t display2offs;
+    pair16_t display_coords[2];
+    size_t display_offs[2];
+
+    unsigned active_display;
+    unsigned second_display;
 
     uint16_t flags;
 
     bool srfc_requested;
+    bool srfc_requested_cur;
     bool srfc_submitted;
 
     bool initialized;
@@ -56,9 +60,11 @@ static inline size_t vidmem_offset_by_coords(pair16_t coords, uint16_t xres)
     return (size_t) ((coords.y * xres + coords.x));
 }
 
+#define REQUEST_CUR 1
+
 void gpu_clear_display(void);
-int gpu_page_flip(void);
-int gpu_request_surface(srfc_t* surface);
+int gpu_page_flip();
+int gpu_request_surface(srfc_t* surface, int flags);
 int gpu_submit_surface(const srfc_t* surface);
 
 #define VGA_TO_PCI_GENERAL(vga_dev) (&((vga_dev)->pci_dev_general))

@@ -10,9 +10,6 @@
 #include <kern/vbe.h>
 #include <kern/graphics.h>
 
-#define FIELD_WIDTH  10
-#define FIELD_HEIGHT 20
-
 typedef enum Figure_type
 {
     I_BLOCK = 0,
@@ -195,15 +192,24 @@ const static figure_t Figures[N_BLOCK_TYPES][N_BLOCK_POS] =
     }
 };
 
-const static color32bpp_t Bg_clr      = {.rgb = 0x000A3463};
-const static color32bpp_t Outline_clr = {.rgb = 0x0000FAFF};
+#define FIELD_WIDTH  10
+#define FIELD_HEIGHT 20
+
+#define BLOCK_NUM ((FIELD_WIDTH) * (FIELD_HEIGHT))
+
+#define BLOCK_SIZE 32U
+#define BLOCK_OUTL_THICKNESS 1U
+
+#define FIELD_BAR_OUTL_THICKNESS 5U
+#define FIELD_BAR_WIDTH  (2 * (FIELD_BAR_OUTL_THICKNESS) + (FIELD_WIDTH ) * (BLOCK_SIZE)) 
+#define FIELD_BAR_HEIGHT (2 * (FIELD_BAR_OUTL_THICKNESS) + (FIELD_HEIGHT) * (BLOCK_SIZE))
+
+const static color32bpp_t Bg_clr       = {.rgb = 0x000F0F33};
+
+const static color32bpp_t Empty_box_clr      = {.rgb = 0x00080819};
+const static color32bpp_t Empty_box_outl_clr = {.rgb = 0x00333333};
+const static color32bpp_t Field_bar_outl_clr = {.rgb = 0x0000FAFF};
 
 int tetris(void);
-
-void draw_frame(void);
-void draw_next(void);
-void draw_score(void);
-
-void run_loop(void);
 
 #endif // JOS_KERN_TETRIS_H

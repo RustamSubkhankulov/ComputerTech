@@ -27,6 +27,7 @@
         "uefi.h": "c",
         "tsc.h": "c",
         "tetris.h": "c",
-        "x86.h": "c"
+        "x86.h": "c",
+        "assert.h": "c"
     }
 }
