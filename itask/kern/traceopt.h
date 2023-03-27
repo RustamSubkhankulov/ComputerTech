@@ -50,4 +50,18 @@
 #define trace_init 1
 #endif
 
+#ifndef trace_pci
+#define trace_pci 1
+#endif 
+
+#ifdef  trace_pci
+#ifndef trace_pci_more
+#define trace_pci_more 1
+#endif 
+#endif 
+
+#ifndef trace_gpu
+#define trace_gpu 1
+#endif 
+
 #endif
