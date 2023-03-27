@@ -85,7 +85,8 @@ struct Page {
     union {
         struct /* physical page */ {
             /* Number of references
-             * TODO Write about parents */
+             * Child nodes always have class
+             * smaller by 1 than their parents */
             uint32_t refc;
             uintptr_t class : CLASS_BASE;                        /* = log2(size)-CLASS_BASE */
             uintptr_t addr : sizeof(uintptr_t) * 8 - CLASS_BASE; /* = address >> CLASS_BASE */
@@ -118,12 +119,6 @@ void *kzalloc_region(size_t size);
 
 void *mmio_map_region(physaddr_t addr, size_t size);
 void *mmio_remap_last_region(physaddr_t addr, void *oldva, size_t oldsz, size_t size);
-
-struct Page *
-alloc_page(int class, int flags);
-
-void page_ref(struct Page *node);
-void page_unref(struct Page *page);
 
 extern struct AddressSpace kspace;
 extern struct AddressSpace *current_space;

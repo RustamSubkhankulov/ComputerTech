@@ -79,7 +79,10 @@ static bool check_sum_zero(const void* addr, size_t size)
     unsigned char sum = 0;
 
     for (size_t iter = 0; iter < size; iter++)
-        sum += *((unsigned char*) addr + iter);
+    {
+        unsigned char val = *((unsigned char*) addr + iter);
+        sum = (unsigned char) (sum + val);
+    }        
 
     return (sum == 0);
 }
@@ -175,7 +178,8 @@ get_rsdp(void) {
     if (rsdp_saved)
         return rsdp_saved;
 
-    RSDP*  rsdp_ptr = (RSDP*) uefi_lp->ACPIRoot;
+    // RSDP*  rsdp_ptr = (RSDP*) ((LOADER_PARAMS*) (KADDR((physaddr_t)uefi_lp)))->ACPIRoot;
+    RSDP* rsdp_ptr = (RSDP*) uefi_lp->ACPIRoot;
     assert(rsdp_ptr); 
 
     size_t rsdp_size = sizeof(RSDP);
@@ -236,6 +240,7 @@ hpet_register(void) {
 void
 hpet_print_struct(void) {
     HPET *hpet = get_hpet();
+    assert(hpet != NULL);
     cprintf("signature = %s\n", (hpet->h).Signature);
     cprintf("length = %08x\n", (hpet->h).Length);
     cprintf("revision = %08x\n", (hpet->h).Revision);

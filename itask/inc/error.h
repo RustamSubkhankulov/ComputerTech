@@ -17,7 +17,6 @@ enum {
     E_INVALID_EXE = 8,   /* Invalid executable */
     E_NO_SYS = 9,        /* Unimplemented syscall */
     E_NO_ENT = 10,       /* Not found */
-    E_DEV_RT = 11,       /* Device runtime error */
     MAXERROR
 };
 

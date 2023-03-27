@@ -14,6 +14,7 @@
 #include <kern/sched.h>
 #include <kern/kdebug.h>
 #include <kern/macro.h>
+#include <kern/pmap.h>
 #include <kern/traceopt.h>
 
 /* Currently active environment */
@@ -31,7 +32,6 @@ struct Env *envs = NULL;
 /* Free environment list
  * (linked by Env->env_link) */
 static struct Env *env_free_list;
-
 
 /* NOTE: Should be at least LOGNENV */
 #define ENVGENSHIFT 12
@@ -87,6 +87,24 @@ envid2env(envid_t envid, struct Env **env_store, bool need_check_perm) {
  */
 void
 env_init(void) {
+    /* kzalloc_region only works with current_space != NULL */
+
+    /* Allocate envs array with kzalloc_region
+     * (don't forget about rounding) */
+    // LAB 8: Your code here+
+
+    size_t envs_mem_size = ROUNDUP(sizeof(struct Env) * NENV, PAGE_SIZE);
+    void*  envs_mem = kzalloc_region(envs_mem_size);
+    assert(envs_mem != NULL);
+
+    /* Map envs to UENVS read-only,
+     * but user-accessible (with PROT_USER_ set) */
+    // LAB 8: Your code here+
+
+    int res = map_region(&kspace, UENVS, &kspace, (uintptr_t) envs_mem, envs_mem_size, PROT_R | PROT_USER_);
+    if (res < 0) panic("env_init: %i\n", res);
+
+    envs = (struct Env*) envs_mem;
 
     /* Set up envs array */
 
@@ -136,6 +154,10 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, enum EnvType type) {
     struct Env *env;
     if (!(env = env_free_list))
         return -E_NO_FREE_ENV;
+
+    /* Allocate and set up the page directory for this environment. */
+    int res = init_address_space(&env->address_space);
+    if (res < 0) return res;
 
     /* Generate an env_id for this environment */
     int32_t generation = (env->env_id + (1 << ENVGENSHIFT)) & ~(NENV - 1);
@@ -189,7 +211,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, enum EnvType type) {
 #endif
 
     /* For now init trapframe with IF set */
-    env->env_tf.tf_rflags = FL_IF;
+    // env->env_tf.tf_rflags = FL_IF;
 
     /* Commit the allocation */
     env_free_list = env->env_link;
@@ -391,11 +413,19 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, struct Image_bound
  *   'binary + ph->p_offset', should be copied to address
  *   ph->p_va.  Any remaining memory bytes should be cleared to zero.
  *   (The ELF header should have ph->p_filesz <= ph->p_memsz.)
+ *   Use functions from the previous labs to allocate and map pages.
  *
  *   All page protection bits should be user read/write for now.
  *   ELF segments are not necessarily page-aligned, but you can
  *   assume for this function that no two segments will touch
  *   the same page.
+ *
+ *   You may find a function like map_region useful.
+ *
+ *   Loading the segments is much simpler if you can move data
+ *   directly into the virtual addresses stored in the ELF binary.
+ *   So which page directory should be in force during
+ *   this function?
  *
  *   You must also do something with the program's entry point,
  *   to make sure that the environment starts executing there.
@@ -426,7 +456,6 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
 
     const struct Proghdr* ph_table = (const struct Proghdr*) (binary + phoff);
 
-
     for (uint64_t iter = 0; iter < phnum; iter++)
     {
         const struct Proghdr* cur_ph = ph_table + iter;
@@ -434,30 +463,46 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
         if (cur_ph->p_type != ELF_PROG_LOAD)
             continue;
 
-        // TODO
+        cprintf("ph#%ld va:0x%lx pa:0x%lx flags:0x%x \n", iter, cur_ph->p_va, cur_ph->p_pa, cur_ph->p_flags);
 
-        uintptr_t p_va   = (uintptr_t) cur_ph->p_va;
+        uintptr_t p_va   = cur_ph->p_va;
         uint64_t  filesz = cur_ph->p_filesz;
         uint64_t  memsz  = cur_ph->p_memsz;
 
-        if (iter > Loaded_segments_num)
+        if (iter >= Loaded_segments_num)
             panic("Number of loading segments is more than expected \n");
 
         bounds[iter].start = p_va;
         bounds[iter].end   = p_va + memsz;
+        bounds[iter].size  = memsz;
+
+        int res = map_region(&kspace, p_va, NULL, 0, memsz, PROT_RWX | ALLOC_ZERO);
+        if (res < 0) panic("map prog to kspace: %i \n", res);
 
         memcpy((void*) p_va, binary + cur_ph->p_offset, (size_t) filesz);
-        
-        size_t remaining = (size_t) (memsz - filesz);
-        memset((void*) p_va + filesz, 0, remaining);
+
+        uint32_t prog_flags = cur_ph->p_flags; 
+        cprintf("prog_flags: 0x%x \n", prog_flags);
+
+        res = map_region(&env->address_space, p_va, &kspace, p_va, memsz, prog_flags | PROT_USER_);
+        if (res < 0) panic("map prog to env->address_space: %i \n", res);
+
+        unmap_region(&kspace, p_va, memsz);
     }
 
     env->binary = binary;
     env->env_tf.tf_rip = (uintptr_t) elf_header->e_entry;
 
-    int err = bind_functions(env, binary, size, bounds, Loaded_segments_num);
-    if (err < 0)
-        panic("bind_functions: %i", err);        
+    // int err = bind_functions(env, binary, size, bounds, Loaded_segments_num);
+    // if (err < 0)
+    //     panic("bind_functions: %i", err);        
+    // for (unsigned iter = 0; iter < phnum; iter++)
+    //     unmap_region(&kspace, bounds[iter].start, bounds[iter].size);
+
+    // LAB 8: Your code here +
+
+    int res = map_region(&env->address_space, USER_STACK_TOP - USER_STACK_SIZE, NULL, 0, USER_STACK_SIZE, PROT_R | PROT_W | PROT_USER_ | ALLOC_ZERO);
+    if (res < 0) panic("load_icode: %i \n", res);
 
     return 0;
 }
@@ -470,26 +515,20 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
  */
 void
 env_create(uint8_t *binary, size_t size, enum EnvType type) {
+    // LAB 8: Your code here
     // LAB 3: Your code here
 
     struct Env* new_env = NULL;
     
     int err = env_alloc(&new_env, 0, type);
-    if (err < 0)
-    {
-        panic("env_alloc: %i", err);
-    }
+    if (err < 0) panic("env_alloc: %i", err);
 
     err = load_icode(new_env, binary, size);
-    if (err < 0)
-    {
-        panic("load_icode: %i", err);
-    }
+    if (err < 0) panic("load_icode: %i", err);
     
     new_env->env_parent_id = 0;
 
     return;
-
 }
 
 
@@ -499,6 +538,17 @@ env_free(struct Env *env) {
 
     /* Note the environment's demise. */
     if (trace_envs) cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, env->env_id);
+
+#ifndef CONFIG_KSPACE
+    /* If freeing the current environment, switch to kern_pgdir
+     * before freeing the page directory, just in case the page
+     * gets reused. */
+    if (&env->address_space == current_space)
+        switch_address_space(&kspace);
+
+    static_assert(MAX_USER_ADDRESS % HUGE_PAGE_SIZE == 0, "Misaligned MAX_USER_ADDRESS");
+    release_address_space(&env->address_space);
+#endif
 
     /* Return the environment to the free list */
     env->env_status = ENV_FREE;
@@ -523,6 +573,9 @@ env_destroy(struct Env *env) {
 
     if (env == curenv)
         sched_yield();
+    // LAB 8: Your code here (set in_page_fault = 0)
+
+    in_page_fault = 0;
 }
 
 #ifdef CONFIG_KSPACE
@@ -584,6 +637,7 @@ env_pop_tf(struct Trapframe *tf) {
  *       2. Set 'curenv' to the new environment,
  *       3. Set its status to ENV_RUNNING,
  *       4. Update its 'env_runs' counter,
+ *       5. Use switch_address_space() to switch to its address space.
  * Step 2: Use env_pop_tf() to restore the environment's
  *       registers and starting execution of process.
 
@@ -606,6 +660,7 @@ env_run(struct Env *env) {
     }
 
     // LAB 3: Your code here
+    // LAB 8: Your code here+
 
     if (curenv != env)
     {
@@ -615,6 +670,7 @@ env_run(struct Env *env) {
         curenv = env;
         curenv->env_runs++;
         curenv->env_status = ENV_RUNNING;
+        switch_address_space(&curenv->address_space);
     }
 
     env_pop_tf(&curenv->env_tf);
