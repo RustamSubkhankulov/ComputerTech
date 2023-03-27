@@ -18,6 +18,7 @@
 #include <kern/kclock.h>
 #include <kern/kdebug.h>
 #include <kern/traceopt.h>
+#include <kern/gpu.h>
 
 void
 timers_init(void) {
@@ -182,8 +183,17 @@ i386_init(void) {
 #endif /* TEST* */
 #endif
 
+    init_gpu();
+    if (trace_init) cprintf("VGA device initialized.\n");
+
+    // test_gpu();
+    int res = 0;
+    while ((res = getchar()) == 0);
+
+    cprintf("READ SYMBOL %c \n", res);
+
     // Break to monitor
-    // assert(false);
+    assert(false);
 
     /* Schedule and run the first user environment! */
     sched_yield();

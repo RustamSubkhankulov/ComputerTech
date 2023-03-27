@@ -37,6 +37,10 @@ KERN_SRCFILES := kern/bootstrap.S \
 			kern/uefiasm.S \
 			kern/spinlock.c
 
+ifeq (${ITASK}, 1)
+KERN_SRCFILES += kern/pci.c kern/gpu.c kern/vga_regs.c kern/vbe.c kern/graphics.c kern/tetris.c
+endif
+
 ifeq ($(CONFIG_KSPACE),y)
 KERN_SRCFILES += kern/alloc.c
 endif
