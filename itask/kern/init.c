@@ -101,6 +101,8 @@ map_shadow_early_boot(uintptr_t va, uintptr_t sz, void *page) {
 
 extern char end[];
 
+extern int tetris(void);
+
 /* Additionally maps pml4 memory so that we dont get memory errors on accessing
  * uefi_lp, MemMap, KASAN functions. */
 void
@@ -185,12 +187,9 @@ i386_init(void) {
 
     init_gpu();
     if (trace_init) cprintf("VGA device initialized.\n");
+    test_gpu();
 
-    // test_gpu();
-    // int res = 0;
-    // while ((res = getchar()) == 0);
-
-    // cprintf("READ SYMBOL %c \n", res);
+    // tetris();
 
     // Break to monitor
     assert(false);

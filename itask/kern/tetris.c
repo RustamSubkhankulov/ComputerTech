@@ -12,7 +12,28 @@ int tetris(void)
     if (!is_gpu_ready)
         return -E_DEV_RT;
 
+    void draw_frame();
+    void run_loop();
+
     return 0;
 }
 
-#include <kern/traceopt.h>
+void draw_frame(void)
+{
+    
+}
+
+void draw_next(void)
+{
+
+}
+
+void draw_score(void)
+{
+
+}
+
+void run_loop(void)
+{
+
+}

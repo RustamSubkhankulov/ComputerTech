@@ -200,4 +200,10 @@ const static color32bpp_t Outline_clr = {.rgb = 0x0000FAFF};
 
 int tetris(void);
 
+void draw_frame(void);
+void draw_next(void);
+void draw_score(void);
+
+void run_loop(void);
+
 #endif // JOS_KERN_TETRIS_H

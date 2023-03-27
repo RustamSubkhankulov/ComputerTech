@@ -23,6 +23,10 @@
         "kclock.h": "c",
         "utility": "c",
         "stdio.h": "c",
-        "env.h": "c"
+        "env.h": "c",
+        "uefi.h": "c",
+        "tsc.h": "c",
+        "tetris.h": "c",
+        "x86.h": "c"
     }
 }
