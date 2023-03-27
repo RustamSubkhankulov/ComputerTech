@@ -149,8 +149,8 @@ i386_init(void) {
     timers_init();
 
     /* Framebuffer init should be done after memory init */
-    fb_init();
-    if (trace_init) cprintf("Framebuffer initialised\n");
+    // fb_init();
+    // if (trace_init) cprintf("Framebuffer initialised\n");
 
     /* User environment initialization functions */
     env_init();
@@ -187,10 +187,10 @@ i386_init(void) {
     if (trace_init) cprintf("VGA device initialized.\n");
 
     // test_gpu();
-    int res = 0;
-    while ((res = getchar()) == 0);
+    // int res = 0;
+    // while ((res = getchar()) == 0);
 
-    cprintf("READ SYMBOL %c \n", res);
+    // cprintf("READ SYMBOL %c \n", res);
 
     // Break to monitor
     assert(false);

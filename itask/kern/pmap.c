@@ -1249,7 +1249,7 @@ addr_common_class(uintptr_t addr1, uintptr_t addr2) {
 }
 
 
-static int
+int
 map_physical_region(struct AddressSpace *dst, uintptr_t dstart, uintptr_t pstart, size_t size, int flags) {
     if (trace_memory) cprintf("Mapping physical region [%08lX, %08lX] to [%08lX, %08lX] (flags=%x)\n",
                               pstart, pstart + (long)size - 1, dstart, dstart + (long)size - 1, flags);

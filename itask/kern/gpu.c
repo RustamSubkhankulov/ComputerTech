@@ -69,8 +69,11 @@ static int vga_map_memory()
     Vga_dev.fb   = (uint32_t*) Vga_dev.pci_dev_general.bar_addr[Fb_barn].memory;
     Vga_dev.mmio = (void*) Vga_dev.pci_dev_general.bar_addr[MMIO_barn].memory;
 
-    map_addr_early_boot((uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size);
+    // map_addr_early_boot((uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size);
     Vga_dev.mmio = (void*) mmio_map_region((uintptr_t) Vga_dev.mmio, MMIO_size);
+
+    int err = map_physical_region(&kspace, (uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size, PROT_R | PROT_W);
+    if (err < 0) return err;
 
     if (trace_gpu)
         cprintf("vga: memory mapped. \n");
