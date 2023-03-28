@@ -35,9 +35,9 @@ class Vector
 
         void set(const ssize_t x, const ssize_t y, const ssize_t z = 0)
             {
-                len_ = ((fabs(x_) == fabs(x)) 
-                     && (fabs(y_) == fabs(y))
-                     && (fabs(z_) == fabs(z)))? len_: -1;
+                len_ = ((abs(x_) == abs(x)) 
+                     && (abs(y_) == abs(y))
+                     && (abs(z_) == abs(z)))? len_: -1;
                 x_ = x; 
                 y_ = y;
                 z_ = z;
@@ -45,19 +45,19 @@ class Vector
 
         void set_x(const ssize_t x)
             {
-                len_ = (fabs(x_) == fabs(x))? len_: -1;
+                len_ = (abs(x_) == abs(x))? len_: -1;
                 x_ = x;
             }
 
         void set_y(const ssize_t y)
             {
-                len_ = (fabs(y_) == fabs(y))? len_: -1;
+                len_ = (abs(y_) == abs(y))? len_: -1;
                 y_ = y;
             }
 
         void set_z(const ssize_t z)
             {
-                len_ = (fabs(z_) == fabs(z))? len_: -1;
+                len_ = (abs(z_) == abs(z))? len_: -1;
                 z_ = z;
             }
 
@@ -88,18 +88,18 @@ class Vector
                 if (len_ == -1)
                     return len_;
 
-                len_ = sqrt(pow(x_,2) + pow(y_,2) + pow(z_,2));
+                len_ = (ssize_t) sqrt(pow(x_,2) + pow(y_,2) + pow(z_,2));
                 return len_;
             }
 
-        void rotate_z(const ssize_t rad_angle);
-        void rotate_z(const ssize_t sin, ssize_t cos);
+        void rotate_z(const double rad_angle);
+        void rotate_z(const double sin, double cos);
 
-        void rotate_x(const ssize_t rad_angle);
-        void rotate_x(const ssize_t sin, ssize_t cos);
+        void rotate_x(const double rad_angle);
+        void rotate_x(const double sin, double cos);
 
-        void rotate_y(const ssize_t rad_angle);
-        void rotate_y(const ssize_t sin, ssize_t cos);
+        void rotate_y(const double rad_angle);
+        void rotate_y(const double sin, double cos);
 
         void normalize();
 
@@ -149,12 +149,12 @@ class Vector_posed
                 vector_ = v;
             }
 
-        void rotate_z(const ssize_t rad_angle)
+        void rotate_z(const double rad_angle)
             {
                 vector_.rotate_z(rad_angle);
             }
 
-        void rotate_z(const ssize_t sin, const ssize_t cos)
+        void rotate_z(const double sin, const double cos)
             {
                 vector_.rotate_z(sin, cos);
             }

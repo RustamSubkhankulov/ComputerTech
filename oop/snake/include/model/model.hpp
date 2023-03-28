@@ -46,7 +46,7 @@ class Model : public Subscriber_on_timer
         ~Model()                             = default;
 
         void generate_rabbits(const Coords& field_size, const int rnum);
-        void generate_snake(const Coords& field_size, Coords& start_pos, Snake_controller* controller);
+        void generate_snake(Coords& start_pos, Snake_controller* controller);
 
         bool model_is_updated() const
         {

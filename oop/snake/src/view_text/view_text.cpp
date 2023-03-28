@@ -18,10 +18,10 @@
 
 //=========================================================
 
-static const size_t Top_padding = 3;
-static const size_t Btm_padding = 3;
-static const size_t Lft_padding = 1;
-static const size_t Rgt_padding = 1;
+static const ssize_t Top_padding = 3;
+static const ssize_t Btm_padding = 3;
+static const ssize_t Lft_padding = 1;
+static const ssize_t Rgt_padding = 1;
 
 static const int CSI_fg_color_code = 30;
 static const int CSI_bg_color_code = 40; 
@@ -155,7 +155,6 @@ void View_text::restore_sighandler() const
 
 static void sighandler(int signum)
 {
-    View_text* self = dynamic_cast<View_text*>(View::get_view());
     Wnsz_renew_needed = true;
     Wn_resized = true;
 }
@@ -165,7 +164,8 @@ static void sighandler(int signum)
 int View_text::get_poll_timeout()
 {
     if (subs_on_timer.size() == 0)
-        return -1;
+        return 0;
+        // return -1;
 
     int min = INT_MAX;
 
@@ -215,7 +215,8 @@ void View_text::run_loop()
         serve_subs_on_timer(elapsed);
         
         Model* model = get_model();
-        assert(model != nullptr);
+        if (model == nullptr)
+            throw std::runtime_error{"View has no model"};
 
         bool model_updated = model->model_is_updated();
 
@@ -231,7 +232,7 @@ void View_text::run_loop()
 
             draw_rabbits(model);
             draw_snakes(model);
-            draw_results();
+            draw_results(model);
         
             if (model->game_is_ended())
             {
@@ -258,7 +259,7 @@ struct Sub_remove_predicate
 
 void View_text::serve_subs_on_timer(const timeval& elapsed)
 {
-    unsigned elapsed_ms = elapsed.tv_sec * 1000 + elapsed.tv_usec / 1000;
+    unsigned elapsed_ms = (unsigned) (elapsed.tv_sec * 1000 + elapsed.tv_usec / 1000);
 
     size_t count = subs_on_timer.size();
 
@@ -318,7 +319,7 @@ void View_text::poll_on_key(int timeout)
     if (req.revents & POLL_IN)
     {
         char sym = 0;
-        err = read(STDIN_FILENO, &sym, 1);
+        err = (int) read(STDIN_FILENO, &sym, 1);
         if (err == -1)
         {
             fprintf(stderr, "read() failed: %s \n", strerror(errno));
@@ -520,22 +521,22 @@ void View_text::draw_frame()
     ncol = cols - author_str.size() - Rgt_padding;
     printxy(author_str, Vector{(ssize_t) ncol, (ssize_t) rows - 1});
 
-    draw_results();
+    Model* model = get_model();
+    if (model == nullptr)
+        throw std::runtime_error{"View has no model"};
+
+    draw_results(model);
 }
 
 //---------------------------------------------------------
 
-void View_text::draw_results()
+void View_text::draw_results(Model* model)
 {   
     Vector wnsz = get_winsize_real();
-    size_t cols = (size_t) wnsz.x();
     size_t rows = (size_t) wnsz.y();
 
     size_t ncol = Lft_padding + 1;
     size_t nrow = rows - 1;
-
-    Model* model = get_model();
-    assert(model != nullptr);
 
     std::string str{"RESULTS: "};
     set_attr(CYAN, BLACK, false, false, false);

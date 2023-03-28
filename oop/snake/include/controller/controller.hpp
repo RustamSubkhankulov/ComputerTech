@@ -66,15 +66,15 @@ class Snake_controller_AI : public Snake_controller, public Subscriber_on_timer
 {
     public:
 
-        Snake_controller_AI(unsigned timeout):
-        Subscriber_on_timer(timeout)
+        Snake_controller_AI(unsigned upd_timeout):
+        Subscriber_on_timer(upd_timeout)
         {
             subscribe_on_timer();
         }
 
-        Snake_controller_AI(unsigned timeout, Snake* snake, Model* model):
+        Snake_controller_AI(unsigned upd_timeout, Snake* snake, Model* model):
         Snake_controller(snake, model),
-        Subscriber_on_timer(timeout)
+        Subscriber_on_timer(upd_timeout)
         {
             subscribe_on_timer();
         }
@@ -124,7 +124,8 @@ class Snake_controller_dumb_AI : public Snake_controller_AI
 
 class Snake_controller_human: public Snake_controller, public Subscriber_on_key
 {
-    char lb_, rb_;
+    char lb_ = 0;
+    char rb_ = 0;
 
     public:
 
@@ -137,9 +138,9 @@ class Snake_controller_human: public Snake_controller, public Subscriber_on_key
         }
 
         Snake_controller_human(char lb, char rb, Snake* snake, Model* model):
+        Snake_controller(snake, model),
         lb_(lb),
-        rb_(rb),
-        Snake_controller(snake, model)
+        rb_(rb)
         {
             View* view = View::get_view();
             view->set_on_key(std::bind(&Snake_controller_human::on_key, this, std::placeholders::_1));

@@ -2,6 +2,7 @@
 #include <ctime>
 #include <cstdio>
 #include <iostream>
+#include <algorithm>
 
 //---------------------------------------------------------
 
@@ -41,51 +42,51 @@ static Coords get_rand_coords(const Vector& field_size)
 
 //---------------------------------------------------------
 
-static Coords_list get_rand_coords_list(const Vector& field_size, size_t len)
-{
-    Coords_list coords_list{};
+// static Coords_list get_rand_coords_list(const Vector& field_size, size_t len)
+// {
+//     Coords_list coords_list{};
 
-    Coords start = get_rand_coords(field_size);
-    coords_list.push_back(start);
+//     Coords start = get_rand_coords(field_size);
+//     coords_list.push_back(start);
 
-    Coords prev = start;
+//     Coords prev = start;
 
-    for (unsigned iter = 0; iter < len - 1; iter++)
-    {
-        Coords dir{};
-        Coords cur{};
+//     for (unsigned iter = 0; iter < len - 1; iter++)
+//     {
+//         Coords dir{};
+//         Coords cur{};
 
-    again:
-        dir = get_rand_dir();
+//     again:
+//         dir = get_rand_dir();
 
-        if (!(dir.x() == 0 || dir.y() == 0))
-            goto again;
+//         if (!(dir.x() == 0 || dir.y() == 0))
+//             goto again;
 
-        if ((prev.x() == 0 && dir.x() == -1)
-          || prev.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
-            dir.set_x(0);
+//         if ((prev.x() == 0 && dir.x() == -1)
+//         || (prev.x() == field_size.x() - 1 && dir.x() == 1)) // TODO class Coords
+//             dir.set_x(0);
 
-        if ((prev.y() == 0 && dir.y() == -1)
-          || prev.y() == field_size.y() - 1 && dir.y() == 1)
-            dir.set_y(0);
+//         if ((prev.y() == 0 && dir.y() == -1)
+//          || (prev.y() == field_size.y() - 1 && dir.y() == 1))
+//             dir.set_y(0);
 
-        if (dir.x() == 0 && dir.y() == 0)
-            goto again;
+//         if (dir.x() == 0 && dir.y() == 0)
+//             goto again;
 
-        cur = prev + dir;
+//         cur = prev + dir;
 
-        for (const Coords& elem : coords_list)
-        {
-            if (cur.x() == elem.x() && cur.y() == prev.y())
-                goto again;
-        }
+//         for (const Coords& elem : coords_list)
+//         {
+//             if (cur.x() == elem.x() && cur.y() == prev.y())
+//                 goto again;
+//         }
 
-        coords_list.push_back(cur);
-        prev = cur;
-    }
+//         coords_list.push_back(cur);
+//         prev = cur;
+//     }
 
-    return coords_list;
-}
+//     return coords_list;
+// }
 
 //---------------------------------------------------------
 
@@ -103,11 +104,11 @@ void Rabbit::update(const Coords& field_size, const list<Rabbit>& rabbits)
         dir = get_rand_dir();
 
         if ((coords_.x() == 0 && dir.x() == -1)
-          || coords_.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
+         || (coords_.x() == field_size.x() - 1 && dir.x() == 1)) // TODO class Coords
             dir.set_x(0);
 
         if ((coords_.y() == 0 && dir.y() == -1)
-          || coords_.y() == field_size.y() - 1 && dir.y() == 1)
+         || (coords_.y() == field_size.y() - 1 && dir.y() == 1))
             dir.set_y(0);
 
         if (!(dir.x() == 0 && dir.y() == 0))
@@ -187,11 +188,11 @@ Snake::Update_res Snake::update(const Vector& field_size)
     }
 
     if ((head.x() == 0 && dir.x() == -1)
-        || head.x() == field_size.x() - 1 && dir.x() == 1) // TODO class Coords
+     || (head.x() == field_size.x() - 1 && dir.x() == 1)) // TODO class Coords
         dir.set_x(0);
 
     if ((head.y() == 0 && dir.y() == -1)
-        || head.y() == field_size.y() - 1 && dir.y() == 1)
+     || (head.y() == field_size.y() - 1 && dir.y() == 1))
         dir.set_y(0);
 
     if (dir.x() == 0 && dir.y() == 0)
@@ -329,7 +330,7 @@ void Model::process_events()
 
 void Model::generate_rabbits(const Vector& field_size, const int rnum)
 {
-    for (unsigned iter = 0; iter < rnum; iter++)
+    for (unsigned iter = 0; iter < (unsigned) rnum; iter++)
     {
         Rabbit cur = Vector{0, 0};
         Coords cur_coords{};
@@ -401,7 +402,7 @@ void Snake::turn_right()
 
 //---------------------------------------------------------
 
-void Model::generate_snake(const Vector& field_size, Coords& start_pos, Snake_controller* controller)
+void Model::generate_snake(Coords& start_pos, Snake_controller* controller)
 {
     assert(controller);
 

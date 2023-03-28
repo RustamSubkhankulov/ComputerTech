@@ -23,7 +23,7 @@ int main(const int argc, const char** argv)
         exit(EXIT_FAILURE);
     }
 
-    std::srand(std::time(0));
+    std::srand((unsigned) std::time(0));
 
     View* view = View::get_view(argv[1]);
     assert(view != nullptr);
@@ -37,8 +37,8 @@ int main(const int argc, const char** argv)
     Coords snake_start_pos1{field_size.x() / 2, field_size.y() / 2};
     Coords snake_start_pos2{snake_start_pos1.x(), snake_start_pos1.y() + 5};
 
-    model.generate_snake(field_size, snake_start_pos1, &human_ctrl1);
-    model.generate_snake(field_size, snake_start_pos2, &human_ctrl2);
+    model.generate_snake(snake_start_pos1, &human_ctrl1);
+    model.generate_snake(snake_start_pos2, &human_ctrl2);
     model.generate_rabbits(field_size, 100);
 
     view->set_model(&model);

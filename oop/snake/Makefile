@@ -13,51 +13,54 @@ INC_DIR = include
 
 #----------------------------------------------------------
 
-USE_DEBUG_FLAGS = 0
-
 # flags needed to use with sfml
 SFML_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 
-ifeq ($(USE_DEBUG_FLAGS), 1)
+# CXXFLAGS +=\
+# 		   -fsanitize=address                                              \
+#            -fsanitize=alignment                                            \
+#            -fsanitize=bool                                                 \
+#            -fsanitize=bounds                                               \
+#            -fsanitize=enum                                                 \
+#            -fsanitize=float-cast-overflow                                  \
+#            -fsanitize=float-divide-by-zero                                 \
+#            -fsanitize=integer-divide-by-zero                               \
+#            -fsanitize=leak                                                 \
+#            -fsanitize=nonnull-attribute                                    \
+#            -fsanitize=null                                                 \
+#            -fsanitize=object-size                                          \
+#            -fsanitize=return                                               \
+#            -fsanitize=returns-nonnull-attribute                            \
+#            -fsanitize=shift                                                \
+#            -fsanitize=signed-integer-overflow                              \
+#            -fsanitize=undefined                                            \
+#            -fsanitize=unreachable                                          \
+#            -fsanitize=vla-bound                                            \
+#            -fsanitize=vptr                                                 \
 
-	DEBUG_FLAGS = 												\
-	-lubsan -D NDEBUG -g -std=c++20 -fmax-errors=1 				\
-	-Wall -Wextra -Weffc++ -Waggressive-loop-optimizations  	\
-	-Wc++0x-compat -Wc++11-compat -Wc++14-compat  				\
-	-Wcast-qual -Wchar-subscripts -Wconditionally-supported 	\
-	-Wconversion  -Wctor-dtor-privacy -Wempty-body 				\
-	-Wfloat-equal -Wformat-nonliteral -Wformat-security 		\
-	-Wformat-signedness -Wformat=2 -Winline  -Wlogical-op 		\
-	-Wmissing-declarations  -Wnon-virtual-dtor -Wopenmp-simd	\
-	-Woverloaded-virtual -Wpacked -Wpointer-arith 				\
-	-Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo	\
-	-Wstack-usage=8192  -Wstrict-null-sentinel 					\
-	-Wstrict-overflow=2 -Wsuggest-attribute=noreturn 			\
-	-Wsuggest-final-methods -Wsuggest-final-types  				\
-	-Wsuggest-override -Wswitch-default -Wswitch-enum 			\
-	-Wsync-nand -Wundef  -Wunreachable-code -Wunused 			\
-	-Wuseless-cast -Wvariadic-macros -Wno-literal-suffix 		\
-	-Wno-missing-field-initializers -Wno-narrowing				\
-	-Wno-old-style-cast -Wno-varargs -fcheck-new 				\
-	-fsized-deallocation  -fstack-protector 					\
-	-fstrict-overflow   -flto-odr-type-merging 					\
-	-fno-omit-frame-pointer -fPIE -fsanitize=address  			\
-	-fsanitize=bool -fsanitize=bounds -fsanitize=enum  			\
-	-fsanitize=float-cast-overflow 								\
-	-fsanitize=float-divide-by-zero 							\
-	-fsanitize=integer-divide-by-zero -fsanitize=leak 			\
-	-fsanitize=nonnull-attribute -fsanitize=null 				\
-	-fsanitize=object-size -fsanitize=return 					\
-	-fsanitize=returns-nonnull-attribute -fsanitize=shift 		\
-	-fsanitize=signed-integer-overflow -fsanitize=undefined 	\
-	-fsanitize=unreachable -fsanitize=vla-bound 				\
-	-fsanitize=vptr -lm -pie
-
-else
-
-	DEBUG_FLAGS =
-
-endif
+CXXFLAGS += \
+           -g --static-pie -std=c++14 -fmax-errors=100 -Wall -Wextra       \
+           -Waggressive-loop-optimizations -Wc++0x-compat                  \
+           -Wc++11-compat -Wc++14-compat -Wcast-align -Wcast-qual          \
+           -Wchar-subscripts -Wconditionally-supported -Wconversion        \
+           -Wctor-dtor-privacy -Wempty-body -Wfloat-equal                  \
+           -Wformat-nonliteral -Wformat-security -Wformat-signedness       \
+           -Wformat=2 -Winline -Wlogical-op                                \
+           -Wmissing-declarations -Wnon-virtual-dtor -Wopenmp-simd         \
+           -Woverloaded-virtual -Wpointer-arith -Wredundant-decls          \
+           -Wshadow -Wsign-conversion -Wsign-promo -Wstack-usage=8192      \
+           -Wstrict-null-sentinel -Wstrict-overflow=2                      \
+           -Wsuggest-attribute=noreturn -Wsuggest-final-methods            \
+           -Wsuggest-final-types -Wsuggest-override -Wswitch-default       \
+           -Wswitch-enum -Wsync-nand -Wundef -Wunreachable-code -Wunused   \
+           -Wuseless-cast -Wvariadic-macros -Wno-literal-suffix            \
+           -Wno-missing-field-initializers -Wno-narrowing                  \
+           -Wno-old-style-cast -Wno-varargs -fcheck-new                    \
+           -fsized-deallocation -fstack-protector                          \
+           -fstrict-overflow -flto-odr-type-merging                        \
+           -fno-omit-frame-pointer                                         \
+           -fPIE                                                           \
+           -lm -pie
 
 #==========================================================
 # SOURCE / OBJECT FILES LIST
@@ -80,11 +83,11 @@ build: snake
 #----------------------------------------------------------
 
 snake: $(OBJ)
-	$(CXX) $(^) -o $(@) $(SFML_FLAGS)
+	$(CXX) $(^) -o $(@) $(SFML_FLAGS) $(CXXFLAGS)
 
 define build_rule =
 $(OBJ_DIR)/$(1).o: $(call SRC_PATH,$(1)) 
-	$(CXX) $(call SRC_PATH,$(1)) -c -o $(OBJ_DIR)/$(1).o $(DEBUG_FLAGS) $(CXXFLAGS)
+	$(CXX) $(call SRC_PATH,$(1)) -c -o $(OBJ_DIR)/$(1).o $(CXXFLAGS)
 endef
 
 -include depends
