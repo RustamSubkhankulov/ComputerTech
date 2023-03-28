@@ -241,7 +241,7 @@ void srfc_box(srfc_t* surface, pair16_t bl, pair16_t tr, color32bpp_t color)
     assert(surface->bpp == 32);
 
     assert(bl.x <= tr.x);
-    assert(bl.y <= tr.y);
+    assert(tr.y <= bl.y);
 
     srfc_hzline(surface, bl.x, tr.x, tr.y, color);
     srfc_hzline(surface, bl.x, tr.x, bl.y, color);
