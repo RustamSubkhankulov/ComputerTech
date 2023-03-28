@@ -11,6 +11,9 @@ static pair16_t Score_pos;
 static pair16_t Level_pos;
 static pair16_t Lines_pos;
 
+static pair16_t Next_pos_tl;
+static pair16_t Hold_pos_tl;
+
 static struct Field_elem
 {
     bool present;
@@ -24,6 +27,10 @@ static struct Tetris_gamestate
     unsigned level;
     unsigned lines;
 
+    figure_t cur;
+    figure_type_t next;
+    figure_type_t hold;
+
 } Gamestate;
 
 static void set_up_res(void);
@@ -33,17 +40,26 @@ static void draw_field(srfc_t* surf);
 static void draw_logo(srfc_t* surf);
 static void draw_frame(srfc_t* surf);
 
-static void draw_field_elems(srfc_t* surf);
+static void draw_pg_field_elems(srfc_t* surf);
 static void draw_field_elem(srfc_t* surf, pair16_t bl, pair16_t tr, color32bpp_t clr);
 static void draw_empty_box(srfc_t* surf, pair16_t bl, pair16_t tr);
 
+static void fill_empty_figure(srfc_t* surf, pair16_t pos_tl);
+static void draw_figure(srfc_t* surf, pair16_t pos_tl, const figure_t* fig);
+
+static void draw_next_initial(srfc_t* surf);
+static void draw_hold_initial(srfc_t* surf);
+static void draw_stat_initial(srfc_t* surf);
+
 static void draw_next(srfc_t* surf);
 static void draw_hold(srfc_t* surf);
-static void draw_score(srfc_t* surf);
 
-static void set_score(uint32_t score, srfc_t* surf);
-static void set_level(uint32_t level, srfc_t* surf);
-static void set_lines(uint32_t lines, srfc_t* surf);
+static void fill_empty_next(srfc_t* surf);
+static void fill_empty_hold(srfc_t* surf);
+
+static void draw_score(srfc_t* surf);
+static void draw_level(srfc_t* surf);
+static void draw_lines(srfc_t* surf);
 
 static void run_loop(void);
 
@@ -90,13 +106,29 @@ static void draw_initial()
     draw_frame(&surf);
     draw_logo(&surf);
 
-    draw_score(&surf);
-    draw_hold(&surf);
-    draw_next(&surf);
+    draw_stat_initial(&surf);
+    draw_hold_initial(&surf);
+    draw_next_initial(&surf);
 
-    set_score(0xDEAD, &surf);
-    set_level(0xBEBE, &surf);
-    set_lines(0xBABA, &surf);
+    //-----------------------
+    // TEST
+    //-----------------------
+
+    Gamestate.score = 0xDEAD;
+    Gamestate.level = 0xBEBE;
+    Gamestate.lines = 0xBABA;
+
+    draw_score(&surf);
+    draw_level(&surf);
+    draw_lines(&surf);
+
+    Gamestate.next = J_BLOCK;
+    Gamestate.hold = Z_BLOCK;
+
+    draw_next(&surf);
+    draw_hold(&surf);
+
+    //-----------------------
 
     err = gpu_submit_surface(&surf);
     if (err < 0) panic("gpu_submit_surface(): %i \n", err);
@@ -120,10 +152,10 @@ static void draw_field(srfc_t* surf)
     Field[0][0].present = true;
     Field[0][0].color = Figures[S_BLOCK][3].color;
 
-    draw_field_elems(surf);
+    draw_pg_field_elems(surf);
 }
 
-static void draw_field_elems(srfc_t* surf)
+static void draw_pg_field_elems(srfc_t* surf)
 {
     pair16_t bl = {.x = Field_tl.x, .y = Field_tl.y + BLOCK_SIZE};
     pair16_t tr = {.x = Field_tl.x + BLOCK_SIZE, .y = Field_tl.y};
@@ -241,11 +273,10 @@ static void draw_logo(srfc_t* surf)
     num_pos.y = p2.y + 15;
     srfc_puts(surf, "100", num_pos, yellow, 8);    
 
-    color32bpp_t white = {.rgb = 0x00FFFFFF};
     const char* author = "by Rustamchik (2023)";
     pair16_t author_pos = {.x = surf->res.x - 8 * 2 * strlen(author) - BLOCK_SIZE,
                            .y = surf->res.y - 8 * 2 - BLOCK_SIZE};
-    srfc_puts(surf, author, author_pos, white, 2);
+    srfc_puts(surf, author, author_pos, White_color, 2);
 }
 
 static void draw_frame(srfc_t* surf)
@@ -287,27 +318,20 @@ static void draw_frame(srfc_t* surf)
     }
 }
 
-static void draw_next(srfc_t* surf)
-{
-
-}
-
-static void draw_score(srfc_t* surf)
+static void draw_stat_initial(srfc_t* surf)
 {
     pair16_t score_bar_tl = {.x = Field_tl.x + FIELD_BAR_WIDTH + BLOCK_SIZE - FIELD_BAR_OUTL_THICKNESS,
                              .y = Field_tl.y - FIELD_BAR_OUTL_THICKNESS};
 
-    pair16_t score_bar_bl = {.x = score_bar_tl.x, .y = score_bar_tl.y + SCORE_BAR_HEIGHT};
-    pair16_t score_bar_tr = {.x = score_bar_tl.x + SCORE_BAR_WIDTH, .y = score_bar_tl.y};
+    pair16_t score_bar_bl = {.x = score_bar_tl.x, .y = score_bar_tl.y + STAT_BAR_HEIGHT};
+    pair16_t score_bar_tr = {.x = score_bar_tl.x + STAT_BAR_WIDTH, .y = score_bar_tl.y};
 
-    srfc_bar(surf, score_bar_bl, score_bar_tr, Score_bar_bg_clr);
-    srfc_box_thick_in(surf, score_bar_bl, score_bar_tr, Score_bar_outl_clr, SCORE_BAR_OUTL_THICKNESS);
-
-    color32bpp_t white = {.rgb = 0x00FFFFFF};
+    srfc_bar(surf, score_bar_bl, score_bar_tr, Stat_bar_bg_clr);
+    srfc_box_thick_in(surf, score_bar_bl, score_bar_tr, Stat_bar_outl_clr, STAT_BAR_OUTL_THICKNESS);
 
     score_bar_bl.x += BLOCK_SIZE / 2;
 
-    const uint8_t ppb = SCORE_TEXT_BPP;
+    const uint8_t ppb = STAT_TEXT_BPP;
     const unsigned string_num = 3;
 
     const char* string[3] = {"LINES:", "LEVEL:", "SCORE:"};
@@ -319,59 +343,159 @@ static void draw_score(srfc_t* surf)
     for (unsigned iter = 0; iter < string_num; iter++)
     {
         score_bar_bl.y -= BLOCK_SIZE + BLOCK_SIZE / 2;
-        srfc_puts(surf, string[iter], score_bar_bl, white, ppb);
+        srfc_puts(surf, string[iter], score_bar_bl, White_color, ppb);
     
         num_pos.y -= BLOCK_SIZE + BLOCK_SIZE / 2;
         *(coords[iter]) = num_pos;
-        srfc_puts(surf, "0000", num_pos, white, ppb);
+        srfc_puts(surf, "0000", num_pos, White_color, ppb);
     }
 }
 
-static void set_score(uint32_t score, srfc_t* surf)
+static void draw_score(srfc_t* surf)
 {
-    if (Gamestate.score == score)
-        return;
-
-    Gamestate.score = score;
-
     char str[5] = { 0 };
-    color32bpp_t white = {.rgb = 0x00FFFFFF};
 
-    srfc_puts(surf, "\b\b\b\b", Score_pos, Score_bar_bg_clr, SCORE_TEXT_BPP);
-    srfc_puts(surf, itoa(score, str, 16), Score_pos, white, SCORE_TEXT_BPP);
+    srfc_puts(surf, "\b\b\b\b", Score_pos, Stat_bar_bg_clr, STAT_TEXT_BPP);
+    srfc_puts(surf, itoa(Gamestate.score, str, 16), Score_pos, White_color, STAT_TEXT_BPP);
 }
 
-static void set_level(uint32_t level, srfc_t* surf)
+static void draw_level(srfc_t* surf)
 {
-    if (Gamestate.level == level)
-        return;
-
-    Gamestate.level = level;
-
     char str[5] = { 0 };
-    color32bpp_t white = {.rgb = 0x00FFFFFF};
 
-    srfc_puts(surf, "\b\b\b\b", Level_pos, Score_bar_bg_clr, SCORE_TEXT_BPP);
-    srfc_puts(surf, itoa(level, str, 16), Level_pos, white, SCORE_TEXT_BPP);
+    srfc_puts(surf, "\b\b\b\b", Level_pos, Stat_bar_bg_clr, STAT_TEXT_BPP);
+    srfc_puts(surf, itoa(Gamestate.level, str, 16), Level_pos, White_color, STAT_TEXT_BPP);
 }
 
-static void set_lines(uint32_t lines, srfc_t* surf)
+static void draw_lines(srfc_t* surf)
 {
-    if (Gamestate.lines == lines)
-        return;
-
-    Gamestate.lines = lines;
-
     char str[5] = { 0 };
-    color32bpp_t white = {.rgb = 0x00FFFFFF};
 
-    srfc_puts(surf, "\b\b\b\b", Lines_pos, Score_bar_bg_clr, SCORE_TEXT_BPP);
-    srfc_puts(surf, itoa(lines, str, 16), Lines_pos, white, SCORE_TEXT_BPP);
+    srfc_puts(surf, "\b\b\b\b", Lines_pos, Stat_bar_bg_clr, STAT_TEXT_BPP);
+    srfc_puts(surf, itoa(Gamestate.lines, str, 16), Lines_pos, White_color, STAT_TEXT_BPP);
+}
+
+static void draw_next_initial(srfc_t* surf)
+{
+    pair16_t next_bar_tl = {.x = Field_tl.x + FIELD_BAR_WIDTH + BLOCK_SIZE - FIELD_BAR_OUTL_THICKNESS,
+                            .y = Field_tl.y - FIELD_BAR_OUTL_THICKNESS + STAT_BAR_HEIGHT + BLOCK_SIZE};
+
+    pair16_t next_bar_bl = {.x = next_bar_tl.x, .y = next_bar_tl.y + NEXT_BAR_HEIGHT};
+    pair16_t next_bar_tr = {.x = next_bar_tl.x + NEXT_BAR_WIDTH, .y = next_bar_tl.y};
+
+    srfc_bar(surf, next_bar_bl, next_bar_tr, Next_bar_bg_clr);
+    srfc_box_thick_in(surf, next_bar_bl, next_bar_tr, Next_bar_outl_clr, NEXT_BAR_OUTL_THICKNESS);
+
+    const char* str = "NEXT:";
+    unsigned len = strlen(str);
+    uint16_t pixel_len = len * 8 * NEXT_TEXT_BPP;
+
+    pair16_t str_pos = {.x = next_bar_tl.x + (NEXT_BAR_WIDTH - pixel_len) / 2,
+                        .y = next_bar_tl.y + 8 * NEXT_TEXT_BPP};
+
+    srfc_puts(surf, str, str_pos, White_color, NEXT_TEXT_BPP);
+
+    Next_pos_tl.x = next_bar_tl.x + (NEXT_BAR_WIDTH - FIGURE_SIZE * BLOCK_SIZE) / 2;
+    Next_pos_tl.y = next_bar_tl.y + 7 * BLOCK_SIZE / 4;
+
+    fill_empty_next(surf);
+}
+
+static void draw_hold_initial(srfc_t* surf)
+{
+    pair16_t hold_bar_tl = {.x = Field_tl.x + FIELD_BAR_WIDTH + BLOCK_SIZE - FIELD_BAR_OUTL_THICKNESS,
+                            .y = Field_tl.y - FIELD_BAR_OUTL_THICKNESS + STAT_BAR_HEIGHT + NEXT_BAR_HEIGHT +2 * BLOCK_SIZE};
+
+    pair16_t hold_bar_bl = {.x = hold_bar_tl.x, .y = Field_tl.y + FIELD_BAR_HEIGHT - FIELD_BAR_OUTL_THICKNESS};
+    pair16_t hold_bar_tr = {.x = hold_bar_tl.x + HOLD_BAR_WIDTH, .y = hold_bar_tl.y};
+
+    srfc_bar(surf, hold_bar_bl, hold_bar_tr, Hold_bar_bg_clr);
+    srfc_box_thick_in(surf, hold_bar_bl, hold_bar_tr, Hold_bar_outl_clr, HOLD_BAR_OUTL_THICKNESS);
+
+    const char* str = "HOLD:";
+    unsigned len = strlen(str);
+    uint16_t pixel_len = len * 8 * HOLD_TEXT_BPP;
+
+    pair16_t str_pos = {.x = hold_bar_tl.x + (HOLD_BAR_WIDTH - pixel_len) / 2,
+                        .y = hold_bar_tl.y + 8 * HOLD_TEXT_BPP};
+
+    srfc_puts(surf, str, str_pos, White_color, HOLD_TEXT_BPP);
+
+    Hold_pos_tl.x = hold_bar_tl.x + (HOLD_BAR_WIDTH - FIGURE_SIZE * BLOCK_SIZE) / 2;
+    Hold_pos_tl.y = hold_bar_tl.y + 7 * BLOCK_SIZE / 4;
+
+    fill_empty_hold(surf);
+}
+
+static void draw_figure(srfc_t* surf, pair16_t pos_tl, const figure_t* fig)
+{
+    pair16_t bl = {.x = pos_tl.x, .y = pos_tl.y + BLOCK_SIZE};
+    pair16_t tr = {.x = pos_tl.x + BLOCK_SIZE, .y = pos_tl.y};
+
+    for (unsigned y = 0; y < FIGURE_SIZE; y++)
+    {
+        for (unsigned x = 0; x < FIGURE_SIZE; x++)
+        {
+            if (fig->map[y][x] == 1)
+            {
+                draw_field_elem(surf, bl, tr, fig->color);
+            }
+        
+            bl.x += BLOCK_SIZE;
+            tr.x += BLOCK_SIZE;
+        }
+
+        bl.y += BLOCK_SIZE;
+        tr.y += BLOCK_SIZE;
+    
+        bl.x = pos_tl.x;
+        tr.x = pos_tl.x + BLOCK_SIZE;
+    }
+}
+
+static void draw_next(srfc_t* surf)
+{
+    fill_empty_next(surf);
+    draw_figure(surf, Next_pos_tl, &Figures[Gamestate.next][0]);
 }
 
 static void draw_hold(srfc_t* surf)
 {
+    fill_empty_hold(surf);
+    draw_figure(surf, Hold_pos_tl, &Figures[Gamestate.hold][0]);
+}
 
+static void fill_empty_figure(srfc_t* surf, pair16_t pos_tl)
+{
+    pair16_t bl = {.x = pos_tl.x, .y = pos_tl.y + BLOCK_SIZE};
+    pair16_t tr = {.x = pos_tl.x + BLOCK_SIZE, .y = pos_tl.y};
+
+    for (unsigned y = 0; y < FIGURE_SIZE; y++)
+    {
+        for (unsigned x = 0; x < FIGURE_SIZE; x++)
+        {
+            draw_empty_box(surf, bl, tr);
+        
+            bl.x += BLOCK_SIZE;
+            tr.x += BLOCK_SIZE;
+        }
+
+        bl.y += BLOCK_SIZE;
+        tr.y += BLOCK_SIZE;
+    
+        bl.x = pos_tl.x;
+        tr.x = pos_tl.x + BLOCK_SIZE;
+    }
+}
+
+static void fill_empty_next(srfc_t* surf)
+{
+    fill_empty_figure(surf, Next_pos_tl);
+}
+
+static void fill_empty_hold(srfc_t* surf)
+{
+    fill_empty_figure(surf, Hold_pos_tl);
 }
 
 static void run_loop(void)
