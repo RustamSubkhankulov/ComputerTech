@@ -40,7 +40,7 @@ class View_text: public View
         };
 
         View_text():
-            wnsz_(get_winsize())
+            wnsz_(get_winsize_real())
             {
                 set_sighandler();
                 turn_off_carriage();

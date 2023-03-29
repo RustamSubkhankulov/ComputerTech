@@ -399,8 +399,14 @@ Vector View_text::get_winsize_real() const
 
 Vector View_text::get_winsize() const
 {
-    Vector wnsz = get_winsize_real();
-    return wnsz - Vector{Lft_padding + Rgt_padding, Top_padding + Btm_padding};
+    Vector wnsz_real = get_winsize_real();
+    Vector wnsz = wnsz_real - Vector{Lft_padding + Rgt_padding, Top_padding + Btm_padding};
+
+    // std::cerr << "============";
+    // std::cerr << "real wnsz " << wnsz_real.x() << ' ' << wnsz_real.y() << std::endl;
+    // std::cerr << "wnsz " << wnsz.x() << ' ' << wnsz.y() << std::endl;
+
+    return wnsz;
 }
 
 //---------------------------------------------------------

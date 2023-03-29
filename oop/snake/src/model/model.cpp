@@ -37,7 +37,7 @@ static Coords get_rand_dir()
 
 static Coords get_rand_coords(const Vector& field_size)
 {
-    return Coords{rand() % field_size.x(), rand() & field_size.y()};
+    return Coords{rand() % field_size.x(), rand() % field_size.y()};
 } 
 
 //---------------------------------------------------------
@@ -440,7 +440,7 @@ void Model::subscribe_on_timer()
     View* view = View::get_view();
     assert(view != nullptr);
 
-    on_timer_callback callback{};
+    on_timer_callback callback{}; // TODO 
 
     callback.first  = Subscriber_on_timer::timeout;
     callback.second = std::bind(&Model::on_timer, this);
