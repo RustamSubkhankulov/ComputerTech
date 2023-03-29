@@ -47,6 +47,7 @@ class Model : public Subscriber_on_timer
 
         void generate_rabbits(const Coords& field_size, const int rnum);
         void generate_snake(Coords& start_pos, Snake_controller* controller);
+        bool field_is_free(const Coords& coords);
 
         bool model_is_updated() const
         {
@@ -115,7 +116,8 @@ class Rabbit
             return alive;
         }
 
-        void update(const Coords& field_size, const list<Rabbit>& rabbits);
+        void update(const Coords& field_size, const list<Rabbit>& rabbits,
+                                              const list<Snake>& snakes);
 };
 
 //---------------------------------------------------------

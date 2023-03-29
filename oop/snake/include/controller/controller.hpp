@@ -90,6 +90,23 @@ class Snake_controller_AI : public Snake_controller, public Subscriber_on_timer
 
 class Snake_controller_smart_AI : public Snake_controller_AI
 {
+    private:
+
+        enum Direction_type
+        {
+            NONE  = -1,
+            FRONT =  0,
+            LEFT  =  1,
+            RIGHT =  2,
+            DIRECTIONS_NUM
+        };
+
+        struct Direction 
+        {
+            Coords dir;
+            bool safe;
+        };
+
     public:
 
         Snake_controller_smart_AI():

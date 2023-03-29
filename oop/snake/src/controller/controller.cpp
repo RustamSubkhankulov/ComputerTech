@@ -78,89 +78,234 @@ void Snake_controller_smart_AI::on_timer()
             closest = rabbit_coords;
     }
 
+    Direction dirs[DIRECTIONS_NUM] = {};
+
     switch(snake->direction_)
     {
-        case Snake::Snake_dir::UP:
+        case Snake::Snake_dir::UP: 
         {
-            if (closest.y() < snake_head.y())
-            {
-                snake->turn_right();
-            }
-            else 
-            {
-                if (closest.x() < snake_head.x())
-                {
-                    snake->turn_left();
-                }
-                else if (closest.x() > snake_head.x())
-                {
-                    snake->turn_right();
-                }
-            }
+            dirs[FRONT].dir = Coords{ 0, -1};
+            dirs[LEFT] .dir = Coords{+1,  0};
+            dirs[RIGHT].dir = Coords{-1,  0};
 
-            break;
+            break; 
         }
+
         case Snake::Snake_dir::LEFT:
         {
-            if (closest.x() > snake_head.x())
-            {
-                snake->turn_right();
-            }
-            else 
-            {
-                if (closest.y() < snake_head.y())
-                {
-                    snake->turn_left();
-                }
-                else if (closest.y() > snake_head.y())
-                {
-                    snake->turn_right();
-                }
-            }
+            dirs[FRONT].dir = Coords{-1,  0};
+            dirs[LEFT] .dir = Coords{ 0, +1};
+            dirs[RIGHT].dir = Coords{ 0, -1};
 
             break;
         }
+
         case Snake::Snake_dir::RIGHT:
         {
-            if (closest.x() < snake_head.x())
-            {
-                snake->turn_right();
-            }
-            else 
-            {
-                if (closest.y() < snake_head.y())
-                {
-                    snake->turn_right();
-                }
-                else if (closest.y() > snake_head.y())
-                {
-                    snake->turn_left();
-                }
-            }
+            dirs[FRONT].dir = Coords{1,  0};
+            dirs[LEFT] .dir = Coords{0, -1};
+            dirs[RIGHT].dir = Coords{0, +1};
 
             break;
         }
+
         case Snake::Snake_dir::DOWN:
         {
-            if (closest.y() > snake_head.y())
-            {
-                snake->turn_right();
-            }
-            else 
-            {
-                if (closest.x() < snake_head.x())
-                {
-                    snake->turn_right();
-                }
-                else if (closest.x() > snake_head.x())
-                {
-                    snake->turn_left();
-                }
-            }
+            dirs[FRONT].dir = Coords{ 0, 1};
+            dirs[LEFT] .dir = Coords{-1, 0};
+            dirs[RIGHT].dir = Coords{+1, 0};
 
             break;
         }
+
         default: break;
+    }
+
+    dirs[FRONT].safe = model->field_is_free(snake_head + dirs[FRONT].dir);
+    dirs[LEFT] .safe = model->field_is_free(snake_head + dirs[LEFT] .dir);
+    dirs[RIGHT].safe = model->field_is_free(snake_head + dirs[RIGHT].dir);
+
+    ssize_t delta_x = closest.x() - snake_head.x();
+    ssize_t delta_y = closest.y() - snake_head.y();
+
+    enum Direction_type high_prior = NONE;
+    enum Direction_type mid_prior  = NONE;
+    enum Direction_type low_prior  = NONE;
+
+    if (abs(delta_x) <= abs(delta_y))
+    {
+        switch (snake->direction_)
+        {
+            case Snake::Snake_dir::UP: 
+            {
+                if (delta_x <= 0)
+                {
+                    high_prior = LEFT;
+                    mid_prior  = FRONT;
+                    low_prior  = RIGHT;
+                }
+                else 
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = FRONT;
+                    low_prior  = LEFT;
+                }
+
+                break; 
+            }
+
+            case Snake::Snake_dir::LEFT:
+            {
+                if (delta_x <= 0)
+                {
+                    high_prior = FRONT;
+                    mid_prior  = RIGHT;
+                    low_prior  = LEFT;
+                }
+                else 
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = LEFT;
+                    low_prior  = FRONT;
+                }
+
+                break;
+            }
+
+            case Snake::Snake_dir::RIGHT:
+            {
+                if (delta_x <= 0)
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = LEFT;
+                    low_prior  = FRONT;
+                }
+                else 
+                {
+                    high_prior = FRONT;
+                    mid_prior  = RIGHT;
+                    low_prior  = LEFT;
+                }
+
+                break;
+            }
+
+            case Snake::Snake_dir::DOWN:
+            {
+                if (delta_x <= 0)
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = FRONT;
+                    low_prior  = LEFT;
+                }
+                else 
+                {
+                    high_prior = LEFT;
+                    mid_prior  = FRONT;
+                    low_prior  = RIGHT;
+                }
+
+                break;
+            }
+
+            default: break;
+        }
+    }
+    else // delta_x > delta_y
+    {
+        switch (snake->direction_)
+        {
+            case Snake::Snake_dir::UP: 
+            {
+                if (delta_y <= 0)
+                {
+                    high_prior = FRONT;
+                    mid_prior  = RIGHT;
+                    low_prior  = LEFT;
+                }
+                else 
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = LEFT;
+                    low_prior  = FRONT;
+                }
+
+                break; 
+            }
+
+            case Snake::Snake_dir::LEFT:
+            {
+                if (delta_y <= 0)
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = FRONT;
+                    low_prior  = LEFT;
+                }
+                else 
+                {
+                    high_prior = LEFT;
+                    mid_prior  = FRONT;
+                    low_prior  = RIGHT;
+                }
+
+                break;
+            }
+
+            case Snake::Snake_dir::RIGHT:
+            {
+                if (delta_y <= 0)
+                {
+                    high_prior = LEFT;
+                    mid_prior  = FRONT;
+                    low_prior  = RIGHT;
+                }
+                else 
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = FRONT;
+                    low_prior  = LEFT;
+                }
+
+                break;
+            }
+
+            case Snake::Snake_dir::DOWN:
+            {
+                if (delta_y <= 0)
+                {
+                    high_prior = RIGHT;
+                    mid_prior  = LEFT;
+                    low_prior  = FRONT;
+                }
+                else 
+                {
+                    high_prior = FRONT;
+                    mid_prior  = RIGHT;
+                    low_prior  = LEFT;
+                }
+
+                break;
+            }
+
+            default: break;
+        }
+    }
+
+    enum Direction_type chosen = NONE;
+
+    if (dirs[high_prior].safe == true) 
+        chosen = high_prior;
+    else if (dirs[mid_prior].safe == true)
+        chosen = mid_prior;
+    else if (dirs[low_prior].safe == true)
+        chosen = low_prior;
+
+    if (chosen != NONE)
+    {
+        if (chosen == RIGHT)
+            snake->turn_right();
+        else if (chosen == LEFT)
+            snake->turn_left();
     }
 
     Snake_controller_AI::on_timer();

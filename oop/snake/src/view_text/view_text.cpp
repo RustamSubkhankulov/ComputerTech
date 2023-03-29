@@ -46,6 +46,7 @@ static bool Wn_resized = true;
 static const char Rabbit_symb = 'R';
 
 static const char Snake_symb = 'S';
+static const char Snake_head_symb = 'H';
 
 //=========================================================
 
@@ -367,9 +368,17 @@ void View_text::draw_snakes(Model* model)
 
         Coords_list coords_list = snake.get_coords_list();
 
+        unsigned iter = 0;
+        unsigned head = (unsigned) coords_list.size() - 1;
+
         for (const Coords& coords : coords_list)
         {
-            putxy(Snake_symb, coords + offset);
+            if (iter != head)
+                putxy(Snake_symb, coords + offset);
+            else 
+                putxy(Snake_head_symb, coords + offset);
+
+            iter++;
         }
     }
 }
@@ -400,13 +409,7 @@ Vector View_text::get_winsize_real() const
 Vector View_text::get_winsize() const
 {
     Vector wnsz_real = get_winsize_real();
-    Vector wnsz = wnsz_real - Vector{Lft_padding + Rgt_padding, Top_padding + Btm_padding};
-
-    // std::cerr << "============";
-    // std::cerr << "real wnsz " << wnsz_real.x() << ' ' << wnsz_real.y() << std::endl;
-    // std::cerr << "wnsz " << wnsz.x() << ' ' << wnsz.y() << std::endl;
-
-    return wnsz;
+    return wnsz_real - Vector{Lft_padding + Rgt_padding, Top_padding + Btm_padding};
 }
 
 //---------------------------------------------------------
