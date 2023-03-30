@@ -19,7 +19,7 @@ using Coords_list = std::list<Coords>;
 
 //=========================================================
 
-class Snake_controller;
+class Snake_ctrl;
 class Rabbit;
 class Snake;
 
@@ -46,8 +46,9 @@ class Model : public Subscriber_on_timer
         ~Model()                             = default;
 
         void generate_rabbits(const Coords& field_size, const int rnum);
-        void generate_snake(Coords& start_pos, Snake_controller* controller);
+        void generate_snake(Coords& start_pos, Snake_ctrl* controller);
         bool field_is_free(const Coords& coords);
+        bool field_is_free_for_snake(const Coords& coords);
 
         bool model_is_updated() const
         {
@@ -122,26 +123,28 @@ class Rabbit
 
 //---------------------------------------------------------
 
-class Snake_controller_smart_AI;
-class Snake_controller_dumb_AI;
+class Snake_ctrl_smart_AI;
+class Snake_ctrl_dumb_AI;
 
 class Snake
 {
     friend class Model;
-    friend class Snake_controller_smart_AI;
-    friend class Snake_controller_dumb_AI;
+    
+    public:
 
-    enum class Snake_dir
-    {
-        UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4
-    };
+        enum class Snake_dir
+        {
+            UP = 1, LEFT = 2, RIGHT = 3, DOWN = 4
+        };
 
-    Snake_dir direction_ = Snake_dir::RIGHT;
-    Coords_list coords_list_{};
-    unsigned score = 0;
-    bool alive = true;
+    private:
 
-    unsigned make_longer_ct = 0;
+        Snake_dir direction_ = Snake_dir::RIGHT;
+        Coords_list coords_list_{};
+        unsigned score = 0;
+        bool alive = true;
+
+        unsigned make_longer_ct = 0;
 
     public:
 
@@ -181,6 +184,11 @@ class Snake
         unsigned get_score() const
         {
             return score;
+        }
+
+        Snake_dir get_direction() const
+        {
+            return direction_;
         }
 
         bool is_alive() const

@@ -194,16 +194,6 @@ print_timer_error(void) {
 
 // LAB 5: Your code here:
 
-enum TimerType
-{
-    RTC   = 0, // enumeration values equal indexes in timertab array
-    PIT   = 1,
-    PM    = 2,
-    HPET0 = 3,
-    HPET1 = 4,
-    UNDEF = 5
-};
-
 static enum TimerType
 get_timer_type(const char* name) {
 
@@ -242,7 +232,7 @@ static int timer_id = -1;
 static uint64_t timer = 0;
 static uint64_t freq = 0;
 
-static uint64_t 
+uint64_t 
 get_cpu_frequency(enum TimerType type)
 {
     switch(type)

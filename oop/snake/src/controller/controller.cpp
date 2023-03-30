@@ -7,7 +7,7 @@
 
 //=========================================================
 
-void Snake_controller_human::on_key(int key)
+void Snake_ctrl_human::on_key(int key)
 {
     if (key == lb_)
     {
@@ -33,28 +33,28 @@ void Snake_controller_human::on_key(int key)
 
 //---------------------------------------------------------
 
-void Snake_controller_AI::subscribe_on_timer()
+void Snake_ctrl_AI::subscribe_on_timer()
 {
     View* view = View::get_view();
 
     on_timer_callback callback{};
 
     callback.first  = Subscriber_on_timer::timeout;
-    callback.second = std::bind(&Snake_controller_AI::on_timer, this);
+    callback.second = std::bind(&Snake_ctrl_AI::on_timer, this);
 
     view->set_on_timer(callback);
 }
 
 //---------------------------------------------------------
 
-void Snake_controller_AI::on_timer() 
+void Snake_ctrl_AI::on_timer() 
 {
     subscribe_on_timer();
 }
 
 //---------------------------------------------------------
 
-void Snake_controller_smart_AI::on_timer() 
+void Snake_ctrl_smart_AI::on_timer() 
 {
     Model* model = get_model();
     Snake* snake = get_snake();
@@ -65,9 +65,62 @@ void Snake_controller_smart_AI::on_timer()
     if (snake == nullptr)
         throw std::runtime_error("controller has no snake");
 
+    if (snake->is_alive() == false)
+    {
+        Snake_ctrl_AI::on_timer();
+        return;
+    }
+
     Coords_list snake_coord_list = snake->get_coords_list();
     Coords snake_head = snake_coord_list.back();
 
+    if (model->rabbits.size() == 0)
+    {
+        Direction_type random = get_random_safe_direction(model, snake, snake_head);
+
+        if (random == RIGHT)
+            snake->turn_right();
+        else if (random == LEFT)
+            snake->turn_left();
+
+        Snake_ctrl_AI::on_timer();
+        return;
+    }
+
+    Coords closest = get_closest_rabbit(model, snake_head);
+
+    Direction dirs[DIRECTIONS_NUM] = {};
+    
+    get_directions(snake, dirs);
+    check_directions(model, dirs, snake_head);
+
+    Dirs_prior dirs_prior = get_dirs_prior(snake, closest.x() - snake_head.x(), 
+                                                  closest.y() - snake_head.y());
+
+    for (const auto& option : dirs_prior)
+    {
+        if (dirs[option].safe == true)
+        {
+            if (option == RIGHT)
+            {
+                snake->turn_right();
+            }
+            else if (option == LEFT)
+            {
+                snake->turn_left();
+            }
+
+            break;
+        }
+    }
+
+    Snake_ctrl_AI::on_timer();
+}
+
+//---------------------------------------------------------
+
+Coords Snake_ctrl_smart_AI::get_closest_rabbit(Model* model, const Coords& snake_head)
+{
     Coords closest = model->rabbits.front().get_coords();
 
     for (const auto& rabbit : model->rabbits)
@@ -78,15 +131,20 @@ void Snake_controller_smart_AI::on_timer()
             closest = rabbit_coords;
     }
 
-    Direction dirs[DIRECTIONS_NUM] = {};
+    return closest;
+}
 
-    switch(snake->direction_)
+//---------------------------------------------------------
+
+void Snake_ctrl_AI::get_directions(Snake* snake, Direction (&dirs) [DIRECTIONS_NUM])
+{
+    switch(snake->get_direction())
     {
         case Snake::Snake_dir::UP: 
         {
             dirs[FRONT].dir = Coords{ 0, -1};
-            dirs[LEFT] .dir = Coords{+1,  0};
-            dirs[RIGHT].dir = Coords{-1,  0};
+            dirs[LEFT] .dir = Coords{-1,  0};
+            dirs[RIGHT].dir = Coords{+1,  0};
 
             break; 
         }
@@ -112,43 +170,61 @@ void Snake_controller_smart_AI::on_timer()
         case Snake::Snake_dir::DOWN:
         {
             dirs[FRONT].dir = Coords{ 0, 1};
-            dirs[LEFT] .dir = Coords{-1, 0};
-            dirs[RIGHT].dir = Coords{+1, 0};
+            dirs[LEFT] .dir = Coords{+1, 0};
+            dirs[RIGHT].dir = Coords{-1, 0};
 
             break;
         }
 
         default: break;
     }
+}
 
-    dirs[FRONT].safe = model->field_is_free(snake_head + dirs[FRONT].dir);
-    dirs[LEFT] .safe = model->field_is_free(snake_head + dirs[LEFT] .dir);
-    dirs[RIGHT].safe = model->field_is_free(snake_head + dirs[RIGHT].dir);
+//---------------------------------------------------------
 
-    ssize_t delta_x = closest.x() - snake_head.x();
-    ssize_t delta_y = closest.y() - snake_head.y();
+void Snake_ctrl_AI::check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head)
+{
+    dirs[FRONT].safe = model->field_is_free_for_snake(snake_head + dirs[FRONT].dir);
+    dirs[LEFT] .safe = model->field_is_free_for_snake(snake_head + dirs[LEFT] .dir);
+    dirs[RIGHT].safe = model->field_is_free_for_snake(snake_head + dirs[RIGHT].dir);
+}
 
-    enum Direction_type high_prior = NONE;
-    enum Direction_type mid_prior  = NONE;
-    enum Direction_type low_prior  = NONE;
+//---------------------------------------------------------
 
-    if (abs(delta_x) <= abs(delta_y))
+Snake_ctrl_smart_AI::Dirs_prior 
+Snake_ctrl_smart_AI::get_dirs_prior(Snake* snake, ssize_t delta_x, ssize_t delta_y)
+{
+    Dirs_prior dirs_prior{};
+
+    bool direction_factor = false;
+
+    switch (type_)
     {
-        switch (snake->direction_)
+        case RIGHT_ANGLES: direction_factor = (abs(delta_x) <= abs(delta_y)); break;
+        case DIAGONAL    : direction_factor = (abs(delta_x) >= abs(delta_y)); break;
+        default: break;
+    }
+
+    if (abs(delta_x) == 0 && abs(delta_y) == 0)
+    {
+        dirs_prior = {FRONT, RIGHT, LEFT};
+    }
+    else if (direction_factor)
+    {
+        switch (snake->get_direction())
         {
             case Snake::Snake_dir::UP: 
             {
-                if (delta_x <= 0)
+                if (delta_x < 0)
+                    dirs_prior = {LEFT, FRONT, RIGHT};
+                else if (delta_x > 0)
+                    dirs_prior = {RIGHT, FRONT, LEFT};
+                else
                 {
-                    high_prior = LEFT;
-                    mid_prior  = FRONT;
-                    low_prior  = RIGHT;
-                }
-                else 
-                {
-                    high_prior = RIGHT;
-                    mid_prior  = FRONT;
-                    low_prior  = LEFT;
+                    if (delta_y <= 0)
+                        dirs_prior = {FRONT, RIGHT, LEFT};
+                    else 
+                        dirs_prior = {RIGHT, LEFT, FRONT};
                 }
 
                 break; 
@@ -156,17 +232,18 @@ void Snake_controller_smart_AI::on_timer()
 
             case Snake::Snake_dir::LEFT:
             {
-                if (delta_x <= 0)
-                {
-                    high_prior = FRONT;
-                    mid_prior  = RIGHT;
-                    low_prior  = LEFT;
-                }
+                if (delta_x < 0)
+                    dirs_prior = {FRONT, RIGHT, LEFT};
+                else if (delta_x > 0)
+                    dirs_prior = {RIGHT, LEFT, FRONT};
                 else 
                 {
-                    high_prior = RIGHT;
-                    mid_prior  = LEFT;
-                    low_prior  = FRONT;
+                    if (delta_y < 0)
+                        dirs_prior = {RIGHT, FRONT, LEFT};
+                    else if (delta_y > 0)
+                        dirs_prior = {LEFT, FRONT, RIGHT};
+                    else 
+                        dirs_prior = {FRONT, RIGHT, LEFT};
                 }
 
                 break;
@@ -174,17 +251,18 @@ void Snake_controller_smart_AI::on_timer()
 
             case Snake::Snake_dir::RIGHT:
             {
-                if (delta_x <= 0)
-                {
-                    high_prior = RIGHT;
-                    mid_prior  = LEFT;
-                    low_prior  = FRONT;
-                }
+                if (delta_x < 0)
+                    dirs_prior = {RIGHT, LEFT, FRONT};
+                else if (delta_x > 0)
+                    dirs_prior = {FRONT, RIGHT, LEFT};
                 else 
                 {
-                    high_prior = FRONT;
-                    mid_prior  = RIGHT;
-                    low_prior  = LEFT;
+                    if (delta_y < 0)
+                        dirs_prior = {LEFT, FRONT, RIGHT};
+                    else if (delta_y > 0)
+                        dirs_prior = {RIGHT, FRONT, LEFT};
+                    else 
+                        dirs_prior = {FRONT, RIGHT, LEFT};
                 }
 
                 break;
@@ -192,17 +270,16 @@ void Snake_controller_smart_AI::on_timer()
 
             case Snake::Snake_dir::DOWN:
             {
-                if (delta_x <= 0)
-                {
-                    high_prior = RIGHT;
-                    mid_prior  = FRONT;
-                    low_prior  = LEFT;
-                }
+                if (delta_x < 0)
+                    dirs_prior = {RIGHT, FRONT, LEFT};
+                else if (delta_x > 0)
+                    dirs_prior = {LEFT, FRONT, RIGHT};
                 else 
                 {
-                    high_prior = LEFT;
-                    mid_prior  = FRONT;
-                    low_prior  = RIGHT;
+                    if (delta_y >= 0)
+                        dirs_prior = {FRONT, RIGHT, LEFT};
+                    else 
+                        dirs_prior = {RIGHT, LEFT, FRONT};
                 }
 
                 break;
@@ -213,21 +290,22 @@ void Snake_controller_smart_AI::on_timer()
     }
     else // delta_x > delta_y
     {
-        switch (snake->direction_)
+        switch (snake->get_direction())
         {
             case Snake::Snake_dir::UP: 
             {
-                if (delta_y <= 0)
-                {
-                    high_prior = FRONT;
-                    mid_prior  = RIGHT;
-                    low_prior  = LEFT;
-                }
+                if (delta_y < 0)
+                    dirs_prior = {FRONT, RIGHT, LEFT};
+                else if (delta_y > 0)
+                    dirs_prior = {RIGHT, LEFT, FRONT};
                 else 
                 {
-                    high_prior = RIGHT;
-                    mid_prior  = LEFT;
-                    low_prior  = FRONT;
+                    if (delta_x < 0)
+                        dirs_prior = {LEFT, FRONT, RIGHT};
+                    else if (delta_x > 0)
+                        dirs_prior = {RIGHT, FRONT, LEFT};
+                    else 
+                        dirs_prior = {FRONT, RIGHT, LEFT};
                 }
 
                 break; 
@@ -235,17 +313,16 @@ void Snake_controller_smart_AI::on_timer()
 
             case Snake::Snake_dir::LEFT:
             {
-                if (delta_y <= 0)
+                if (delta_y < 0)
+                    dirs_prior = {RIGHT, FRONT, LEFT};
+                else if (delta_y > 0)
+                    dirs_prior = {LEFT, FRONT, RIGHT};
+                else
                 {
-                    high_prior = RIGHT;
-                    mid_prior  = FRONT;
-                    low_prior  = LEFT;
-                }
-                else 
-                {
-                    high_prior = LEFT;
-                    mid_prior  = FRONT;
-                    low_prior  = RIGHT;
+                    if (delta_x <= 0)
+                        dirs_prior = {FRONT, RIGHT, LEFT};
+                    else 
+                        dirs_prior = {RIGHT, LEFT, FRONT};
                 }
 
                 break;
@@ -253,17 +330,16 @@ void Snake_controller_smart_AI::on_timer()
 
             case Snake::Snake_dir::RIGHT:
             {
-                if (delta_y <= 0)
-                {
-                    high_prior = LEFT;
-                    mid_prior  = FRONT;
-                    low_prior  = RIGHT;
-                }
+                if (delta_y < 0)
+                    dirs_prior = {LEFT, FRONT, RIGHT};
+                else if (delta_y > 0)
+                    dirs_prior = {RIGHT, FRONT, LEFT};
                 else 
                 {
-                    high_prior = RIGHT;
-                    mid_prior  = FRONT;
-                    low_prior  = LEFT;
+                    if (delta_x >= 0)
+                        dirs_prior = {FRONT, RIGHT, LEFT};
+                    else 
+                        dirs_prior = {RIGHT, LEFT, FRONT};
                 }
 
                 break;
@@ -271,17 +347,18 @@ void Snake_controller_smart_AI::on_timer()
 
             case Snake::Snake_dir::DOWN:
             {
-                if (delta_y <= 0)
-                {
-                    high_prior = RIGHT;
-                    mid_prior  = LEFT;
-                    low_prior  = FRONT;
-                }
+                if (delta_y < 0)
+                    dirs_prior = {RIGHT, LEFT, FRONT};
+                else if (delta_y > 0)
+                    dirs_prior = {FRONT, RIGHT, LEFT};
                 else 
                 {
-                    high_prior = FRONT;
-                    mid_prior  = RIGHT;
-                    low_prior  = LEFT;
+                    if (delta_x < 0)
+                        dirs_prior = {RIGHT, FRONT, LEFT};
+                    else if (delta_x > 0)
+                        dirs_prior = {LEFT, FRONT, RIGHT};
+                    else 
+                        dirs_prior = {FRONT, RIGHT, LEFT};
                 }
 
                 break;
@@ -291,29 +368,38 @@ void Snake_controller_smart_AI::on_timer()
         }
     }
 
-    enum Direction_type chosen = NONE;
-
-    if (dirs[high_prior].safe == true) 
-        chosen = high_prior;
-    else if (dirs[mid_prior].safe == true)
-        chosen = mid_prior;
-    else if (dirs[low_prior].safe == true)
-        chosen = low_prior;
-
-    if (chosen != NONE)
-    {
-        if (chosen == RIGHT)
-            snake->turn_right();
-        else if (chosen == LEFT)
-            snake->turn_left();
-    }
-
-    Snake_controller_AI::on_timer();
+    return dirs_prior;
 }
 
 //---------------------------------------------------------
 
-void Snake_controller_dumb_AI::on_timer() 
+Snake_ctrl_AI::Direction_type 
+Snake_ctrl_AI::get_random_safe_direction(Model* model, Snake* snake, const Coords& snake_head)
+{
+    Direction dirs[DIRECTIONS_NUM] = {};
+    
+    get_directions(snake, dirs);
+    check_directions(model, dirs, snake_head);
+
+    if (dirs[FRONT].safe == false 
+     && dirs[RIGHT].safe == false
+     && dirs[LEFT ].safe == false)
+        return NONE;
+
+    Direction_type random = NONE;
+
+    do 
+    {
+        random = (Direction_type) ((unsigned) std::rand() % DIRECTIONS_NUM);
+
+    } while (dirs[random].safe != true);
+
+    return (Direction_type) random;
+}
+
+//---------------------------------------------------------
+
+void Snake_ctrl_dumb_AI::on_timer() 
 {
     Model* model = get_model();
     Snake* snake = get_snake();
@@ -327,18 +413,12 @@ void Snake_controller_dumb_AI::on_timer()
     Coords_list snake_coord_list = snake->get_coords_list();
     Coords snake_head = snake_coord_list.back();
 
-    Coords dir = snake->snake_dir_to_coords();
-    Coords new_head = snake_head + dir;
+    Direction_type random = get_random_safe_direction(model, snake, snake_head);
 
-    View* view = View::get_view();
-    Vector wnsz = view->get_winsize();
-
-    int random = std::rand() % 5;
-
-    if (random == 1)
-        snake->turn_left();
-    else if (random == 2)
+    if (random == RIGHT)
         snake->turn_right();
+    else if (random == LEFT)
+        snake->turn_left();
 
-    Snake_controller_AI::on_timer();
+    Snake_ctrl_AI::on_timer();
 }

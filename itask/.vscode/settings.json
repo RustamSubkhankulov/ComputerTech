@@ -28,6 +28,7 @@
         "tsc.h": "c",
         "tetris.h": "c",
         "x86.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "random.h": "c"
     }
 }

@@ -35,7 +35,9 @@ KERN_SRCFILES := kern/bootstrap.S \
 			kern/tsc.c \
 			kern/uefi.c \
 			kern/uefiasm.S \
-			kern/spinlock.c
+			kern/spinlock.c \
+			kern/random.c \
+			kern/random_data.c
 
 ifeq (${ITASK}, 1)
 KERN_SRCFILES += kern/pci.c kern/gpu.c kern/vga_regs.c kern/vbe.c kern/graphics.c kern/tetris.c

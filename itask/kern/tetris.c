@@ -3,7 +3,9 @@
 #include <inc/x86.h>
 #include <inc/string.h>
 
+#include <kern/random.h>
 #include <kern/tetris.h>
+#include <kern/tsc.h>
 
 static pair16_t Field_tl;
 
@@ -28,6 +30,8 @@ static struct Tetris_gamestate
     unsigned lines;
 
     figure_t cur;
+    pair16_t cur_pos;
+
     figure_type_t next;
     figure_type_t hold;
 
@@ -35,6 +39,8 @@ static struct Tetris_gamestate
 
 static void set_up_res(void);
 static void draw_initial(void);
+static void set_up_rand(void);
+static void set_up_initial_gamestate(void);
 
 static void draw_field(srfc_t* surf);
 static void draw_logo(srfc_t* surf);
@@ -61,6 +67,8 @@ static void draw_score(srfc_t* surf);
 static void draw_level(srfc_t* surf);
 static void draw_lines(srfc_t* surf);
 
+static enum Figure_type get_rand_figure_type(void);
+
 static void run_loop(void);
 
 int tetris(void)
@@ -69,16 +77,39 @@ int tetris(void)
     if (is_gpu_ready == false)
         return -E_DEV_RT;
 
+    set_up_rand();
+
     set_up_res();
     draw_initial();
-
-    Gamestate.level = 1;
-    Gamestate.score = 0;
-    Gamestate.lines = 0;
+    set_up_initial_gamestate();
 
     run_loop();
 
     return 0;
+}
+
+static void set_up_initial_gamestate(void)
+{
+    Gamestate.level = 1;
+    Gamestate.score = 0;
+    Gamestate.lines = 0;
+
+    srfc_t surf = { 0 };
+
+    int err = gpu_request_surface(&surf, REQUEST_CUR);
+    if (err < 0) panic("gpu_request_surface(): %i \n", err);
+
+    Gamestate.hold = NONE;
+    draw_hold(&surf);
+
+    Gamestate.next = get_rand_figure_type();
+    draw_next(&surf);
+
+    err = gpu_submit_surface(&surf);
+    if (err < 0) panic("gpu_submit_surface(): %i \n", err);
+
+    err = gpu_page_flip();
+    if (err < 0) panic("gpu_page_flip(): %i \n", err);
 }
 
 static void set_up_res(void)
@@ -114,19 +145,19 @@ static void draw_initial()
     // TEST
     //-----------------------
 
-    Gamestate.score = 0xDEAD;
-    Gamestate.level = 0xBEBE;
-    Gamestate.lines = 0xBABA;
+    // Gamestate.score = 0xDEAD;
+    // Gamestate.level = 0xBEBE;
+    // Gamestate.lines = 0xBABA;
 
-    draw_score(&surf);
-    draw_level(&surf);
-    draw_lines(&surf);
+    // draw_score(&surf);
+    // draw_level(&surf);
+    // draw_lines(&surf);
 
-    Gamestate.next = J_BLOCK;
-    Gamestate.hold = Z_BLOCK;
+    // Gamestate.next = J_BLOCK;
+    // Gamestate.hold = Z_BLOCK;
 
-    draw_next(&surf);
-    draw_hold(&surf);
+    // draw_next(&surf);
+    // draw_hold(&surf);
 
     //-----------------------
 
@@ -456,13 +487,17 @@ static void draw_figure(srfc_t* surf, pair16_t pos_tl, const figure_t* fig)
 static void draw_next(srfc_t* surf)
 {
     fill_empty_next(surf);
-    draw_figure(surf, Next_pos_tl, &Figures[Gamestate.next][0]);
+
+    if (Gamestate.next != NONE)
+        draw_figure(surf, Next_pos_tl, &Figures[Gamestate.next][0]);
 }
 
 static void draw_hold(srfc_t* surf)
 {
     fill_empty_hold(surf);
-    draw_figure(surf, Hold_pos_tl, &Figures[Gamestate.hold][0]);
+
+    if (Gamestate.hold != NONE)
+        draw_figure(surf, Hold_pos_tl, &Figures[Gamestate.hold][0]);
 }
 
 static void fill_empty_figure(srfc_t* surf, pair16_t pos_tl)
@@ -496,6 +531,17 @@ static void fill_empty_next(srfc_t* surf)
 static void fill_empty_hold(srfc_t* surf)
 {
     fill_empty_figure(surf, Hold_pos_tl);
+}
+
+static void set_up_rand(void)
+{
+    uint64_t cpu_freq = get_cpu_frequency(HPET0);
+    srand((unsigned) (cpu_freq));
+}
+
+static enum Figure_type get_rand_figure_type(void)
+{
+    return I_BLOCK + (rand() % N_BLOCK_TYPES);
 }
 
 static void run_loop(void)

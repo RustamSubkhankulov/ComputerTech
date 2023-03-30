@@ -85,7 +85,7 @@ class Vector
 
         ssize_t len() const 
             {
-                if (len_ == -1)
+                if (len_ != -1)
                     return len_;
 
                 len_ = (ssize_t) sqrt(pow(x_,2) + pow(y_,2) + pow(z_,2));

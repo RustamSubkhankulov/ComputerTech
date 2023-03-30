@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <assert.h>
+#include <array>
 
 //---------------------------------------------------------
 
@@ -13,7 +14,7 @@
 
 //=========================================================
 
-class Snake_controller
+class Snake_ctrl
 {
     private:
 
@@ -22,16 +23,16 @@ class Snake_controller
 
     public:
         
-        Snake_controller() { return; }
+        Snake_ctrl() { return; }
 
-        Snake_controller(Snake* snake, Model* model):
+        Snake_ctrl(Snake* snake, Model* model):
         snake_(snake),
         model_(model)
         {
             return;
         }
 
-        virtual ~Snake_controller() 
+        virtual ~Snake_ctrl() 
         { 
             return; 
         }
@@ -62,35 +63,9 @@ class Snake_controller
 
 //---------------------------------------------------------
 
-class Snake_controller_AI : public Snake_controller, public Subscriber_on_timer
+class Snake_ctrl_AI : public Snake_ctrl, public Subscriber_on_timer
 {
-    public:
-
-        Snake_controller_AI(unsigned upd_timeout):
-        Subscriber_on_timer(upd_timeout)
-        {
-            subscribe_on_timer();
-        }
-
-        Snake_controller_AI(unsigned upd_timeout, Snake* snake, Model* model):
-        Snake_controller(snake, model),
-        Subscriber_on_timer(upd_timeout)
-        {
-            subscribe_on_timer();
-        }
-
-        void on_timer() override;
-
-    private:
-
-        void subscribe_on_timer();
-};
-
-//---------------------------------------------------------
-
-class Snake_controller_smart_AI : public Snake_controller_AI
-{
-    private:
+    protected:
 
         enum Direction_type
         {
@@ -107,31 +82,90 @@ class Snake_controller_smart_AI : public Snake_controller_AI
             bool safe;
         };
 
+        void get_directions(Snake* snake, Direction (&dirs) [DIRECTIONS_NUM]);
+        void check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head);
+        Direction_type get_random_safe_direction(Model* model, Snake* snake, const Coords& snake_head);
+
     public:
 
-        Snake_controller_smart_AI():
-        Snake_controller_AI(100U)
-        { }
+        Snake_ctrl_AI(unsigned upd_timeout):
+        Subscriber_on_timer(upd_timeout)
+        {
+            subscribe_on_timer();
+        }
 
-        Snake_controller_smart_AI(Snake* snake, Model* model):
-        Snake_controller_AI(100U, snake, model) 
-        { }
+        Snake_ctrl_AI(unsigned upd_timeout, Snake* snake, Model* model):
+        Snake_ctrl(snake, model),
+        Subscriber_on_timer(upd_timeout)
+        {
+            subscribe_on_timer();
+        }
 
         void on_timer() override;
+
+    private:
+
+        void subscribe_on_timer();
 };
 
 //---------------------------------------------------------
 
-class Snake_controller_dumb_AI : public Snake_controller_AI
+class Snake_ctrl_smart_AI : public Snake_ctrl_AI
 {
     public:
 
-        Snake_controller_dumb_AI():
-        Snake_controller_AI(100U)
+        enum Smart_AI_type
+        {
+            RIGHT_ANGLES = 0,
+            DIAGONAL = 1
+        };
+
+    private:
+
+        Smart_AI_type type_;
+
+        enum Direction_priority
+        {
+            HIGH_PRIOR = 0,
+            MID_PRIOR  = 1,
+            LOW_PRIOR  = 2,
+            PRIORS_NUM
+        };
+
+        using Dirs_prior = std::array<Direction_type, PRIORS_NUM>;
+
+    public:
+
+        Snake_ctrl_smart_AI(Smart_AI_type type = RIGHT_ANGLES):
+        Snake_ctrl_AI(100U),
+        type_(type)
         { }
 
-        Snake_controller_dumb_AI(Snake* snake, Model* model):
-        Snake_controller_AI(100U, snake, model) 
+        Snake_ctrl_smart_AI(Snake* snake, Model* model, Smart_AI_type type = RIGHT_ANGLES):
+        Snake_ctrl_AI(100U, snake, model),
+        type_(type)
+        { }
+
+        void on_timer() override;
+
+    private:
+
+        Coords get_closest_rabbit(Model* model, const Coords& snake_head);
+        Dirs_prior get_dirs_prior(Snake* snake, ssize_t delta_x, ssize_t delta_y);
+};
+
+//---------------------------------------------------------
+
+class Snake_ctrl_dumb_AI : public Snake_ctrl_AI
+{
+    public:
+
+        Snake_ctrl_dumb_AI():
+        Snake_ctrl_AI(100U)
+        { }
+
+        Snake_ctrl_dumb_AI(Snake* snake, Model* model):
+        Snake_ctrl_AI(100U, snake, model) 
         { }
 
         void on_timer() override;
@@ -139,28 +173,28 @@ class Snake_controller_dumb_AI : public Snake_controller_AI
 
 //---------------------------------------------------------
 
-class Snake_controller_human: public Snake_controller, public Subscriber_on_key
+class Snake_ctrl_human: public Snake_ctrl, public Subscriber_on_key
 {
     char lb_ = 0;
     char rb_ = 0;
 
     public:
 
-        Snake_controller_human(char lb, char rb):
+        Snake_ctrl_human(char lb, char rb):
         lb_(lb),
         rb_(rb)
         {
             View* view = View::get_view();
-            view->set_on_key(std::bind(&Snake_controller_human::on_key, this, std::placeholders::_1));
+            view->set_on_key(std::bind(&Snake_ctrl_human::on_key, this, std::placeholders::_1));
         }
 
-        Snake_controller_human(char lb, char rb, Snake* snake, Model* model):
-        Snake_controller(snake, model),
+        Snake_ctrl_human(char lb, char rb, Snake* snake, Model* model):
+        Snake_ctrl(snake, model),
         lb_(lb),
         rb_(rb)
         {
             View* view = View::get_view();
-            view->set_on_key(std::bind(&Snake_controller_human::on_key, this, std::placeholders::_1));
+            view->set_on_key(std::bind(&Snake_ctrl_human::on_key, this, std::placeholders::_1));
         }
 
         void on_key(int key) override;

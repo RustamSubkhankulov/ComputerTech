@@ -42,54 +42,6 @@ static Coords get_rand_coords(const Vector& field_size)
 
 //---------------------------------------------------------
 
-// static Coords_list get_rand_coords_list(const Vector& field_size, size_t len)
-// {
-//     Coords_list coords_list{};
-
-//     Coords start = get_rand_coords(field_size);
-//     coords_list.push_back(start);
-
-//     Coords prev = start;
-
-//     for (unsigned iter = 0; iter < len - 1; iter++)
-//     {
-//         Coords dir{};
-//         Coords cur{};
-
-//     again:
-//         dir = get_rand_dir();
-
-//         if (!(dir.x() == 0 || dir.y() == 0))
-//             goto again;
-
-//         if ((prev.x() == 0 && dir.x() == -1)
-//         || (prev.x() == field_size.x() - 1 && dir.x() == 1)) // TODO class Coords
-//             dir.set_x(0);
-
-//         if ((prev.y() == 0 && dir.y() == -1)
-//          || (prev.y() == field_size.y() - 1 && dir.y() == 1))
-//             dir.set_y(0);
-
-//         if (dir.x() == 0 && dir.y() == 0)
-//             goto again;
-
-//         cur = prev + dir;
-
-//         for (const Coords& elem : coords_list)
-//         {
-//             if (cur.x() == elem.x() && cur.y() == prev.y())
-//                 goto again;
-//         }
-
-//         coords_list.push_back(cur);
-//         prev = cur;
-//     }
-
-//     return coords_list;
-// }
-
-//---------------------------------------------------------
-
 void Rabbit::update(const Coords& field_size, const list<Rabbit>& rabbits,
                                               const list<Snake>& snakes)
 {
@@ -250,15 +202,7 @@ void Model::update(const Vector& field_size)
         rabbit.update(field_size, rabbits, snakes);
     
     for (Snake& snake : snakes)
-    {
         snake.update(field_size);
-
-        // if (res == Snake::Update_res::LOSE)
-        // {
-        //     game_ended = true;
-        //     break;
-        // }   
-    }
 
     unsigned alive_ct = 0;
 
@@ -428,7 +372,7 @@ void Snake::turn_right()
 
 //---------------------------------------------------------
 
-void Model::generate_snake(Coords& start_pos, Snake_controller* controller)
+void Model::generate_snake(Coords& start_pos, Snake_ctrl* controller)
 {
     assert(controller);
 
@@ -467,6 +411,31 @@ void Model::subscribe_on_timer()
     assert(view != nullptr);
 
     view->set_on_timer({Subscriber_on_timer::timeout, std::bind(&Model::on_timer, this)});
+}
+
+//---------------------------------------------------------
+
+bool Model::field_is_free_for_snake(const Coords& coords)
+{
+    for (const Snake& snake : snakes)
+    {
+        Coords_list snake_coords_list = snake.get_coords_list();
+
+        for (const Coords& snake_pos : snake_coords_list)
+        {
+            if (snake_pos.x() == coords.x()
+             && snake_pos.y() == coords.y())
+                return false;
+        }
+    }
+
+    Vector wnsz = View::get_view()->get_winsize();
+
+    if (coords.x() >= wnsz.x() - 1
+     || coords.y() >= wnsz.y() - 1)
+        return false;
+
+    return true;
 }
 
 //---------------------------------------------------------
