@@ -1,7 +1,7 @@
 TETRIS (1984) JOS-game
 ===================
 
-![doom.jpg](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/pictures/doom.jpg)
+<img src="https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/pictures/Tetris_Logo.jpeg" data-canonical-src="https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/pictures/Tetris_Logo.jpeg" width="600" height="400" />
 
 Description
 -----------
