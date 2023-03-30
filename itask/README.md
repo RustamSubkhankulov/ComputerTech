@@ -1,14 +1,14 @@
-DOOM (1993) JOS-port
+TETRIS (1984) JOS-game
 ===================
 
 ![doom.jpg](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/pictures/doom.jpg)
 
 Description
 -----------
-DOOM JOS-port is an invidual task, which is based on course 
+TETRIS JOS-game is an invidual task, which is based on course 
 "Operating system kernel design", DREC MIPT 2022-2023. 
 
-The goal of this project is to port DOOM to JOS - simple operating system used 
+The goal of this project is to implement TETRIS in JOS - simple operating system used 
 as educating example of OS kernel in MIT and MIPT courses. Some parts of the 
 kernel have been already enhanced/reworked previosly by me during the course.  
 Althouth, project uses version of OS, that is not fully completed yet.
@@ -16,7 +16,7 @@ This is up to me to complete course and add missing functions later.
 
 Plan
 ----
-To port DOOM to JOS, few modules of OS must be added: 
+To implement TETRIS in JOS, few modules of OS must be added: 
 - implement support for software graphics rendering in the JOS operating system.
 - implement support for input devices (such as keyboard or gamepad)
 
