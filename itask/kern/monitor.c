@@ -32,6 +32,8 @@ int mon_start(int argc, char **argv, struct Trapframe *tf);
 int mon_stop(int argc, char **argv, struct Trapframe *tf);
 int mon_frequency(int argc, char **argv, struct Trapframe *tf);
 int mon_memory(int argc, char **argv, struct Trapframe *tf);
+int mon_pagetable(int argc, char **argv, struct Trapframe *tf);
+int mon_virt(int argc, char **argv, struct Trapframe *tf);
 
 struct Command {
     const char *name;
@@ -49,7 +51,9 @@ static struct Command commands[] = {
         {"timer_start", "Starts timer",                          mon_start    },
         {"timer_stop",  "Stops timer and prints elapsed time",   mon_stop     },
         {"timer_freq",  "Measures and prints out cpu frequency", mon_frequency},
-        {"memory",      "Dumps memory lists of free pages",      mon_memory   }
+        {"memory",      "Dumps memory lists of free pages",      mon_memory   },
+        {"virt",        "Dumps virtual page tree",               mon_virt     },
+        {"pagetable",   "Dumps whole pml4 table recursively",    mon_pagetable}
 };
 #define NCOMMANDS (sizeof(commands) / sizeof(commands[0]))
 
@@ -90,7 +94,13 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf) {
 
     cprintf("Stack backtrace:" "\n");
 
-    uint64_t rbp = read_rbp();
+    uint64_t rbp = 0;
+
+    if (tf == NULL) // calling from kernel
+        rbp = read_rbp();
+    else 
+        rbp = tf->tf_regs.reg_rbp;
+
     struct Ripdebuginfo info = {};
 
     while (rbp != 0)
@@ -150,6 +160,10 @@ mon_dumpcmos(int argc, char **argv, struct Trapframe *tf) {
  */
 // LAB 6: Your code here
 
+/* Implement mon_pagetable() and mon_virt()
+ * (using dump_virtual_tree(), dump_page_table())*/
+// LAB 7: Your code here
+
 /* Kernel monitor command interpreter */
 
 int mon_start(int argc, char **argv, struct Trapframe *tf) {
@@ -173,6 +187,18 @@ int mon_frequency(int argc, char **argv, struct Trapframe *tf) {
 int mon_memory(int argc, char **argv, struct Trapframe *tf) {
 
     dump_memory_lists();
+    return 0;
+}
+
+int mon_pagetable(int argc, char **argv, struct Trapframe *tf)
+{
+    dump_page_table(KADDR(rcr3()));
+    return 0;
+}
+
+int mon_virt(int argc, char **argv, struct Trapframe *tf)
+{
+    dump_virtual_tree(current_space->root, MAX_CLASS);
     return 0;
 }
 
@@ -210,6 +236,7 @@ runcmd(char *buf, struct Trapframe *tf) {
     return 0;
 }
 
+// tf == NULL for kernel
 void
 monitor(struct Trapframe *tf) {
 

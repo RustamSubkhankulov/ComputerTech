@@ -54,8 +54,7 @@ class View
             return; 
         }
 
-        virtual void field_sector_freed(const Coords& coords)
-        { }
+        virtual void field_sector_freed(const Coords& coords) = 0;
 
         virtual ~View() { return; };
 

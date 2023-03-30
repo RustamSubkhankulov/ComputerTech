@@ -29,6 +29,71 @@ load_kernel_dwarf_info(struct Dwarf_Addrs *addrs) {
     addrs->pubtypes_end = (uint8_t *)(uefi_lp->DebugPubtypesEnd);
 }
 
+void
+load_user_dwarf_info(struct Dwarf_Addrs *addrs) {
+    assert(curenv);
+
+    uint8_t *binary = curenv->binary;
+    assert(curenv->binary);
+    (void)binary;
+
+    struct {
+        const uint8_t **end;
+        const uint8_t **start;
+        const char *name;
+    } sections[] = {
+            {&addrs->aranges_end, &addrs->aranges_begin, ".debug_aranges"},
+            {&addrs->abbrev_end, &addrs->abbrev_begin, ".debug_abbrev"},
+            {&addrs->info_end, &addrs->info_begin, ".debug_info"},
+            {&addrs->line_end, &addrs->line_begin, ".debug_line"},
+            {&addrs->str_end, &addrs->str_begin, ".debug_str"},
+            {&addrs->pubnames_end, &addrs->pubnames_begin, ".debug_pubnames"},
+            {&addrs->pubtypes_end, &addrs->pubtypes_begin, ".debug_pubtypes"},
+    };
+    (void)sections;
+
+    memset(addrs, 0, sizeof(*addrs));
+
+    /* Load debug sections from curenv->binary elf image */
+    // LAB 8: Your code here
+
+    assert(curenv->binary);
+
+    const struct Elf* elf_header   = (const struct Elf*) curenv->binary;
+    
+    const struct Secthdr* sec_headers      = (const struct Secthdr*) (curenv->binary + elf_header->e_shoff);
+    const        uint16_t sec_headers_num  = (const        uint16_t) elf_header->e_shnum;
+
+    const struct Secthdr* shstr_header = sec_headers + elf_header->e_shstrndx;
+    uint64_t shstr_offs = shstr_header->sh_offset; 
+    const char* shstr = (const char*) (binary + shstr_offs);
+    
+    for (unsigned sections_iter = 0; sections_iter < sizeof(sections) / sizeof(sections[0]); sections_iter++)
+    {
+        for (uint16_t sec_header_iter = 0; sec_header_iter < sec_headers_num; sec_header_iter++)
+        {
+            const struct Secthdr* cur_sec_header = sec_headers + sec_header_iter;
+            uint32_t sh_name = cur_sec_header->sh_name;
+
+            if (strcmp(sections[sections_iter].name, shstr + sh_name) == 0)
+            {
+
+                *(sections[sections_iter].start) = curenv->binary  + cur_sec_header->sh_offset;
+                *(sections[sections_iter].end  ) = *(sections->start) + cur_sec_header->sh_size;
+
+                user_mem_assert(curenv, *(sections[sections_iter].start), cur_sec_header->sh_size, PROT_R);
+
+                goto found;
+            }
+        }
+
+        panic("load_user_dwarf_info: failed to find debug section: %s \n", sections[sections_iter].name);
+
+    found:
+        continue;
+    }
+}
+
 #define UNKNOWN       "<unknown>"
 #define CALL_INSN_LEN 5
 
@@ -50,9 +115,27 @@ debuginfo_rip(uintptr_t addr, struct Ripdebuginfo *info) {
     info->rip_fn_addr = addr;
     info->rip_fn_narg = 0;
 
+    /* Temporarily load kernel cr3 and return back once done.
+    * Make sure that you fully understand why it is necessary. */
+    // LAB 8: Your code here
+
+    struct AddressSpace* prev = switch_address_space(&kspace);
+
+    /* Load dwarf section pointers from either
+     * currently running program binary or use
+     * kernel debug info provided by bootloader
+     * depending on whether addr is pointing to userspace
+     * or kernel space */
+    // LAB 8: Your code here:
+
     struct Dwarf_Addrs addrs;
-    assert(addr >= MAX_USER_READABLE);
-    load_kernel_dwarf_info(&addrs);
+
+    if (addr > MAX_USER_ADDRESS)
+        load_kernel_dwarf_info(&addrs);
+    else 
+        load_user_dwarf_info(&addrs);
+
+    switch_address_space(prev);
 
     Dwarf_Off offset = 0, line_offset = 0;
     int res = info_by_address(&addrs, addr, &offset);

@@ -23,7 +23,7 @@ int main(const int argc, const char** argv)
         exit(EXIT_FAILURE);
     }
 
-    std::srand(std::time(0));
+    std::srand((unsigned) std::time(0));
 
     View* view = View::get_view(argv[1]);
     assert(view != nullptr);
@@ -31,14 +31,24 @@ int main(const int argc, const char** argv)
     Model model{};
     Vector field_size = view->get_winsize();
 
-    Snake_controller_human human_ctrl1 {'a', 'd'};
-    Snake_controller_human human_ctrl2 {'j', 'l'};
+    // Snake_ctrl_human human_ctrl1 {'a', 'd'};
+    // Snake_ctrl_human human_ctrl2 {'j', 'l'};
+
+    Snake_ctrl_dumb_AI dumb_ai{};
+    Snake_ctrl_smart_AI smart_ai1{Snake_ctrl_smart_AI::RIGHT_ANGLES};
+    Snake_ctrl_smart_AI smart_ai2{Snake_ctrl_smart_AI::DIAGONAL};
 
     Coords snake_start_pos1{field_size.x() / 2, field_size.y() / 2};
     Coords snake_start_pos2{snake_start_pos1.x(), snake_start_pos1.y() + 5};
+    Coords snake_start_pos3{snake_start_pos1.x(), snake_start_pos1.y() + 10};
 
-    model.generate_snake(field_size, snake_start_pos1, &human_ctrl1);
-    model.generate_snake(field_size, snake_start_pos2, &human_ctrl2);
+    model.generate_snake(snake_start_pos1, &dumb_ai);
+    model.generate_snake(snake_start_pos2, &smart_ai1);
+    model.generate_snake(snake_start_pos3, &smart_ai2);
+
+    // model.generate_snake(snake_start_pos1, &human_ctrl1);
+    // model.generate_snake(snake_start_pos2, &human_ctrl2);
+
     model.generate_rabbits(field_size, 100);
 
     view->set_model(&model);

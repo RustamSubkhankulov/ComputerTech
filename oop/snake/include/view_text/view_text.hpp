@@ -40,7 +40,7 @@ class View_text: public View
         };
 
         View_text():
-            wnsz_(get_winsize())
+            wnsz_(get_winsize_real())
             {
                 set_sighandler();
                 turn_off_carriage();
@@ -59,6 +59,7 @@ class View_text: public View
                 set_location(Vector{1,1});
                 termios_restore_conf();
             }
+            
         void field_sector_freed(const Coords& coords) override;
         Vector get_winsize() const override;
 
@@ -84,7 +85,6 @@ class View_text: public View
 
         Vector get_winsize_real() const;
         void draw_frame();
-        void draw_results();
         void draw_lose_msg();
         
         void set_location(const Vector& coord);
@@ -113,6 +113,7 @@ class View_text: public View
         void termios_restore_conf();
 
         void draw_bg();
+        void draw_results(Model* model);
         void draw_rabbits(Model* model);
         void draw_snakes(Model* model);
 };

@@ -4,6 +4,10 @@
 
 class Subscriber_on_key
 {
+    public:
+
+        virtual ~Subscriber_on_key() {}
+
     protected:
 
         virtual void on_key(int key) = 0;
@@ -15,6 +19,8 @@ class Subscriber_on_timer
 
         Subscriber_on_timer(unsigned timeout_):
         timeout(timeout_) {}
+
+        virtual ~Subscriber_on_timer() {}
 
     protected:
 

@@ -29,7 +29,6 @@ static const char *const error_string[MAXERROR] = {
         [E_INVALID_EXE] = "invalid ELF image",
         [E_NO_ENT] = "entry not found",
         [E_NO_SYS] = "no such system call",
-        [E_DEV_RT] = "device runtime error"
 };
 
 /*
@@ -215,11 +214,6 @@ vprintfmt(void (*putch)(int, void *), void *put_arg, const char *fmt, va_list ap
             // LAB 1: Your code here:
             num = get_unsigned(&aq, lflag, zflag);
             base = 8;
-            goto number;
-
-        case 'b': /* (unsigned) binary */
-            num = get_unsigned(&aq, lflag, zflag);
-            base = 2;
             goto number;
 
         case 'p': /* pointer */

@@ -42,6 +42,18 @@
 #define PIT_IO_CHANNEL_2 0x42
 #define PIT_IO_CMD       0x43
 
+enum TimerType
+{
+    RTC   = 0, // enumeration values equal indexes in timertab array
+    PIT   = 1,
+    PM    = 2,
+    HPET0 = 3,
+    HPET1 = 4,
+    UNDEF = 5
+};
+
+uint64_t get_cpu_frequency(enum TimerType type);
+
 uint64_t tsc_calibrate(void);
 void timer_start(const char *name);
 void timer_stop(void);

@@ -52,60 +52,60 @@ Vector operator- (const Vector& v)
 
 //---------------------------------------------------------
 
-void Vector::rotate_z(const ssize_t rad_angle)
+void Vector::rotate_z(const double rad_angle)
 {
-    ssize_t sinus  = sin(rad_angle);
-    ssize_t cosine = cos(rad_angle);
+    double sinus  = sin(rad_angle);
+    double cosine = cos(rad_angle);
 
     rotate_z(sinus, cosine);
 }
 
-void Vector::rotate_z(const ssize_t sin, const ssize_t cos)
+void Vector::rotate_z(const double sin, const double cos)
 {
     ssize_t x1 = x_;
     ssize_t y1 = y_;
 
-    set_x(cos * x1 - sin * y1);
-    set_y(sin * x1 + cos * y1);
+    set_x((ssize_t) (cos * (double) x1 - sin * (double) y1));
+    set_y((ssize_t) (sin * (double) x1 + cos * (double) y1));
 }
 
 //---------------------------------------------------------
 
-void Vector::rotate_x(const ssize_t rad_angle)
+void Vector::rotate_x(const double rad_angle)
 {
-    ssize_t sinus  = sin(rad_angle);
-    ssize_t cosine = cos(rad_angle);
+    double sinus  = sin(rad_angle);
+    double cosine = cos(rad_angle);
 
     rotate_x(sinus, cosine);
 }
 
-void Vector::rotate_x(const ssize_t sin, const ssize_t cos)
+void Vector::rotate_x(const double sin, const double cos)
 {
     ssize_t y1 = y_;
     ssize_t z1 = z_;
 
-    set_y(cos * y1 - sin * z1);
-    set_z(sin * y1 + cos * z1);
+    set_y((ssize_t) (cos * (double) y1 - sin * (double) z1));
+    set_z((ssize_t) (sin * (double) y1 + cos * (double) z1));
 }
 
 //---------------------------------------------------------
 
 
-void Vector::rotate_y(const ssize_t rad_angle)
+void Vector::rotate_y(const double rad_angle)
 {
-    ssize_t sinus  = sin(rad_angle);
-    ssize_t cosine = cos(rad_angle);
+    double sinus  = sin(rad_angle);
+    double cosine = cos(rad_angle);
 
     rotate_y(sinus, cosine);
 }
 
-void Vector::rotate_y(const ssize_t sin, const ssize_t cos)
+void Vector::rotate_y(const double sin, const double cos)
 {
     ssize_t x1 = x_;
     ssize_t z1 = z_;
 
-    set_x(cos * x1 - sin * z1);
-    set_z(sin * x1 + cos * z1);
+    set_x((ssize_t)(cos * (double) x1 - sin * (double) z1));
+    set_z((ssize_t)(sin * (double) x1 + cos * (double) z1));
 }
 
 //---------------------------------------------------------
@@ -113,7 +113,9 @@ void Vector::rotate_y(const ssize_t sin, const ssize_t cos)
 void Vector::normalize()
 {
     ssize_t length = len();
-    (*this) *= (1 / length);
+
+    if (length != 0)
+        (*this) *= (1 / length);
 }
 
 //---------------------------------------------------------

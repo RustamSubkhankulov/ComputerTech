@@ -33,7 +33,7 @@ typedef struct Pair64
 
 typedef struct Surface
 {
-    uint32_t* buffer;
+    volatile uint32_t* buffer;
 
     pair16_t res;
     uint16_t bpp;
