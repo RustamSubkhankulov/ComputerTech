@@ -9,8 +9,31 @@
 #include <kern/gpu.h>
 #include <kern/vbe.h>
 #include <kern/graphics.h>
+#include <kern/ktimer.h>
+
+static const enum TimerType Timer_type = HPET0;
+
+static const uint64_t Tetris_framerate = 30U;
+static const int64_t Timer_timeout_ms = 1000 / Tetris_framerate;
+
+#define TETRIS_LEVELS_NUM 15U
+static const float Tetris_speed_table[TETRIS_LEVELS_NUM] = { 0.016670f, 0.021017f, 0.026977f,
+                                                             0.035256f, 0.046930f, 0.063610f,
+                                                             0.087900f, 0.123600f, 0.177500f, 
+                                                             0.259800f, 0.388000f, 0.590000f,
+                                                             0.920000f, 1.460000f, 2.360000f };
+
+#define INITIAL_LEVEL    1U
+#define LINES_PER_LEVEL 10U
 
 static const pair16_t Resolution = {.x = 1024, .y = 768};
+
+enum Direction
+{
+    DOWN  = 1,
+    RIGHT = 2,
+    LEFT  = 3
+};
 
 typedef enum Figure_type
 {
@@ -32,7 +55,7 @@ typedef enum Figure_pos
     DEG_90 = 1,
     DEG_180 = 2,
     DEG_270 = 3,
-    N_BLOCK_POS,
+    N_BLOCK_ROT,
 
 } figure_pos_t;
 
@@ -46,7 +69,7 @@ typedef struct Figure
 
 } figure_t;
 
-const static figure_t Figures[N_BLOCK_TYPES][N_BLOCK_POS] = 
+const static figure_t Figures[N_BLOCK_TYPES][N_BLOCK_ROT] = 
 {
     {
         {.type = I_BLOCK, .color.rgb = 0x0001FFFF, .map = {{0, 1, 0, 0}, 

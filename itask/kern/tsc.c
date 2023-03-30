@@ -310,7 +310,7 @@ timer_stop(void) {
     uint64_t ticks = tsc - timer;
 
     uint64_t frequency = get_cpu_frequency(timer_id);
-    uint64_t elapsed_time = ticks / frequency;
+    uint64_t elapsed_time = (ticks / frequency);
 
     cprintf("%ld\n", elapsed_time);
 

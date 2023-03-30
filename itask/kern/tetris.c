@@ -6,8 +6,10 @@
 #include <kern/random.h>
 #include <kern/tetris.h>
 #include <kern/tsc.h>
+#include <kern/console.h>
 
 static pair16_t Field_tl;
+static pair16_t New_fig_pos_tl;
 
 static pair16_t Score_pos;
 static pair16_t Level_pos;
@@ -29,22 +31,32 @@ static struct Tetris_gamestate
     unsigned level;
     unsigned lines;
 
-    figure_t cur;
-    pair16_t cur_pos;
+    struct Figure_info
+    {
+        figure_type_t type;
+        pair16_t pos_tl;
+        unsigned rot;
+
+    } cur_fig;
 
     figure_type_t next;
     figure_type_t hold;
 
+    bool lines_updated;
+    uint64_t frames_per_cell;
+
 } Gamestate;
+
+static int Last_pressed_key = 0;
 
 static void set_up_res(void);
 static void draw_initial(void);
 static void set_up_rand(void);
 static void set_up_initial_gamestate(void);
 
-static void draw_field(srfc_t* surf);
-static void draw_logo(srfc_t* surf);
-static void draw_frame(srfc_t* surf);
+static void draw_field_initial(srfc_t* surf);
+static void draw_logo_initial(srfc_t* surf);
+static void draw_frame_initial(srfc_t* surf);
 
 static void draw_pg_field_elems(srfc_t* surf);
 static void draw_field_elem(srfc_t* surf, pair16_t bl, pair16_t tr, color32bpp_t clr);
@@ -71,6 +83,17 @@ static enum Figure_type get_rand_figure_type(void);
 
 static void run_loop(void);
 
+static void model_update_on_key(int key);
+static void model_update_on_timer(void);
+
+static void model_update_level(void);
+static void model_process_key(int key);
+static void model_process_one_cycle(void);
+static void model_new_cur_fig(void);
+static void model_update_field(uint64_t frame_ct);
+
+static void draw_view(void); 
+
 int tetris(void)
 {
     bool is_gpu_ready = gpu_ready();
@@ -90,7 +113,7 @@ int tetris(void)
 
 static void set_up_initial_gamestate(void)
 {
-    Gamestate.level = 1;
+    Gamestate.level = INITIAL_LEVEL;
     Gamestate.score = 0;
     Gamestate.lines = 0;
 
@@ -104,6 +127,11 @@ static void set_up_initial_gamestate(void)
 
     Gamestate.next = get_rand_figure_type();
     draw_next(&surf);
+
+    Gamestate.cur_fig.type = NONE;
+    Gamestate.lines_updated = false;
+
+    Gamestate.frames_per_cell = (uint64_t) (1 / (Tetris_speed_table[INITIAL_LEVEL]));
 
     err = gpu_submit_surface(&surf);
     if (err < 0) panic("gpu_submit_surface(): %i \n", err);
@@ -133,9 +161,9 @@ static void draw_initial()
     srfc_clear(&surf);
     srfc_fill(&surf, Bg_clr);
 
-    draw_field(&surf);
-    draw_frame(&surf);
-    draw_logo(&surf);
+    draw_field_initial(&surf);
+    draw_frame_initial(&surf);
+    draw_logo_initial(&surf);
 
     draw_stat_initial(&surf);
     draw_hold_initial(&surf);
@@ -168,7 +196,7 @@ static void draw_initial()
     if (err < 0) panic("gpu_page_flip(): %i \n", err);
 }
 
-static void draw_field(srfc_t* surf)
+static void draw_field_initial(srfc_t* surf)
 {
     pair16_t center = {.x = surf->res.x / 2, .y = surf->res.y / 2};
 
@@ -180,10 +208,13 @@ static void draw_field(srfc_t* surf)
     Field_tl.x = center.x - FIELD_BAR_WIDTH  / 2 + FIELD_BAR_OUTL_THICKNESS; 
     Field_tl.y = center.y - FIELD_BAR_HEIGHT / 2 + FIELD_BAR_OUTL_THICKNESS;
 
-    Field[0][0].present = true;
-    Field[0][0].color = Figures[S_BLOCK][3].color;
+    // Field[0][0].present = true;
+    // Field[0][0].color = Figures[S_BLOCK][3].color;
 
     draw_pg_field_elems(surf);
+
+    New_fig_pos_tl.x = FIELD_WIDTH / 2;
+    New_fig_pos_tl.y = 0;
 }
 
 static void draw_pg_field_elems(srfc_t* surf)
@@ -247,7 +278,7 @@ static void draw_empty_box(srfc_t* surf, pair16_t bl, pair16_t tr)
     srfc_box_thick_in(surf, bl ,tr, Empty_box_outl_clr, EMPTY_BLOCK_OUTL_THICKNESS);
 }
 
-static void draw_logo(srfc_t* surf)
+static void draw_logo_initial(srfc_t* surf)
 {
     const char* title = "TETRIS";
     unsigned title_len = strlen(title);
@@ -310,7 +341,7 @@ static void draw_logo(srfc_t* surf)
     srfc_puts(surf, author, author_pos, White_color, 2);
 }
 
-static void draw_frame(srfc_t* surf)
+static void draw_frame_initial(srfc_t* surf)
 {
     pair16_t up_bl = {.x = 0, .y = BLOCK_SIZE - 1};
     pair16_t up_tr = {.x = BLOCK_SIZE - 1, .y = 0};
@@ -546,5 +577,157 @@ static enum Figure_type get_rand_figure_type(void)
 
 static void run_loop(void)
 {
-    
+    int err = ktimer_start(Timer_timeout_ms, Timer_type);
+    if (err < 0) panic("ktimer_start(): %d \n", err);
+
+    while (1)
+    {
+        int res  = 0;
+        int symb = 0;
+
+        do
+        {
+            res = ktimer_poll();
+            if (res < 0) panic("ktimer_poll(): %d \n", res);
+
+            symb = cons_getc();
+            if (symb != 0)
+                model_update_on_key(symb);
+
+        } while (res != 1);
+
+        model_update_on_timer();
+        draw_view();
+
+        err = ktimer_reset(Timer_timeout_ms, Timer_type);
+        if (err < 0) panic("ktimer_reset(): %d \n", err);
+    }
+}
+
+static void model_update_on_key(int key)
+{
+    Last_pressed_key = key;
+}
+
+static void model_update_on_timer(void)
+{
+    static uint64_t frame_ct  = 0;
+
+    if (Gamestate.lines_updated == true
+     && Gamestate.cur_fig.type == NONE)
+    {
+        model_update_level();
+        Gamestate.lines_updated = false;
+    }
+
+    if (Gamestate.cur_fig.type == NONE)
+        model_new_cur_fig();
+    else 
+    {
+        model_process_key(Last_pressed_key);
+        model_update_field(frame_ct);
+    }
+
+    frame_ct += 1;
+
+    return;
+}
+
+static void model_new_cur_fig(void)
+{
+    Gamestate.cur_fig.type   = Gamestate.next;
+    Gamestate.cur_fig.rot    = 0;
+    Gamestate.cur_fig.pos_tl = New_fig_pos_tl;
+
+    Gamestate.next = get_rand_figure_type();
+}
+
+static void model_update_field(uint64_t frame_ct)
+{
+    unsigned num_cycles = 1U;
+
+    if (Gamestate.frames_per_cell > 1)
+    {
+        if ((frame_ct % Gamestate.frames_per_cell) != 0)
+            return;
+    }
+    else 
+    {
+        num_cycles = (unsigned) Tetris_speed_table[Gamestate.level];
+    }
+
+    for (unsigned iter = 0; iter < num_cycles; iter++)
+    {
+        model_process_one_cycle();
+    }
+}
+
+static void model_process_one_cycle(void)
+{
+    // TODO
+    Gamestate.cur_fig.pos_tl.y += 1;
+}
+
+static void model_process_key(int key)
+{
+    if (Gamestate.cur_fig.type == NONE)
+        return;
+
+    enum Direction dir = 0;
+
+    if (key == 'A' || key == 'a')
+        dir = LEFT;
+    else if (key == 'S' || key == 's')
+        dir = DOWN;
+    else if (key == 'D' || key == 'd')
+        dir = RIGHT;
+    else 
+        return;
+
+    // TODO
+
+    switch(dir)
+    {
+        case LEFT:  Gamestate.cur_fig.pos_tl.x -= 1; break;
+        case DOWN:  Gamestate.cur_fig.pos_tl.y += 1; break;
+        case RIGHT: Gamestate.cur_fig.pos_tl.x += 1; break;
+        default: break;
+    }
+}
+
+static void model_update_level(void)
+{
+    if (Gamestate.lines >= Gamestate.level * LINES_PER_LEVEL)
+    {
+        if (Gamestate.level < TETRIS_LEVELS_NUM)
+        {
+            Gamestate.level += 1;
+            Gamestate.frames_per_cell = (uint64_t) (1 / Tetris_speed_table[Gamestate.level]);
+        }
+    }
+}
+
+static void draw_view(void)
+{
+    srfc_t surf = { 0 };
+
+    int err = gpu_request_surface(&surf, REQUEST_CUR);
+    if (err < 0) panic("gpu_request_surface(): %i \n", err);
+
+    draw_score(&surf);
+    draw_level(&surf);
+    draw_lines(&surf);
+
+    draw_pg_field_elems(&surf);
+
+    pair16_t cur_fig_tl = {.x = Field_tl.x + Gamestate.cur_fig.pos_tl.x * BLOCK_SIZE,
+                           .y = Field_tl.y + Gamestate.cur_fig.pos_tl.y * BLOCK_SIZE};
+    figure_t fig = Figures[Gamestate.cur_fig.type][Gamestate.cur_fig.rot];
+    draw_figure(&surf, cur_fig_tl, &fig);
+
+    err = gpu_submit_surface(&surf);
+    if (err < 0) panic("gpu_submit_surface(): %i \n", err);
+
+    err = gpu_page_flip();
+    if (err < 0) panic("gpu_page_flip(): %i \n", err);
 }

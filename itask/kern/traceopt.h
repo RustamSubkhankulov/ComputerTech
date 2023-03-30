@@ -64,4 +64,8 @@
 #define trace_gpu 1
 #endif 
 
+#ifndef trace_ktimer
+#define trace_ktimer 1
+#endif 
+
 #endif
