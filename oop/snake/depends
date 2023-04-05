@@ -1,0 +1,36 @@
+model.o: src/model/model.cpp src/model/../../include/model/model.hpp \
+ src/model/../../include/model/../vector/vector.hpp \
+ src/model/../../include/model/../subs/subs.hpp \
+ src/model/../../include/view/view.hpp \
+ src/model/../../include/controller/controller.hpp
+view.o: src/view/view.cpp src/view/../../include/view/view.hpp \
+ src/view/../../include/view/../vector/vector.hpp \
+ src/view/../../include/view/../model/model.hpp \
+ src/view/../../include/view/../model/../subs/subs.hpp \
+ src/view/../../include/view_graph/view_graph.hpp \
+ src/view/../../include/view_text/view_text.hpp
+view_text.o: src/view_text/view_text.cpp \
+ src/view_text/../../include/view_text/view_text.hpp \
+ src/view_text/../../include/view_text/../view/view.hpp \
+ src/view_text/../../include/view_text/../view/../vector/vector.hpp \
+ src/view_text/../../include/view_text/../view/../model/model.hpp \
+ src/view_text/../../include/view_text/../view/../model/../subs/subs.hpp
+view_graph.o: src/view_graph/view_graph.cpp \
+ src/view_graph/../../include/view_graph/view_graph.hpp \
+ src/view_graph/../../include/view_graph/../view/view.hpp \
+ src/view_graph/../../include/view_graph/../view/../vector/vector.hpp \
+ src/view_graph/../../include/view_graph/../view/../model/model.hpp \
+ src/view_graph/../../include/view_graph/../view/../model/../subs/subs.hpp
+controller.o: src/controller/controller.cpp \
+ src/controller/../../include/controller/controller.hpp \
+ src/controller/../../include/controller/../subs/subs.hpp \
+ src/controller/../../include/controller/../model/model.hpp \
+ src/controller/../../include/controller/../model/../vector/vector.hpp \
+ src/controller/../../include/controller/../view/view.hpp
+main.o: src/main/main.cpp src/main/../../include/view/view.hpp \
+ src/main/../../include/view/../vector/vector.hpp \
+ src/main/../../include/view/../model/model.hpp \
+ src/main/../../include/view/../model/../subs/subs.hpp \
+ src/main/../../include/controller/controller.hpp
+vector.o: src/vector/vector.cpp \
+ src/vector/../../include/vector/vector.hpp

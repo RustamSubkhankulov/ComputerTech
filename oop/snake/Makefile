@@ -77,7 +77,7 @@ SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))
 # TARGETS
 #==========================================================
 
-all: dir mkdep build rmdep
+all: dir mkdep build
 build: snake 
 
 #----------------------------------------------------------
@@ -112,7 +112,7 @@ clean:
 #==========================================================
 
 mkdep: $(SRC)
-	@ $(CXX) -MM $(SRC) -o depends
+	@ $(CXX) -MM $(SRC) > depends
 
 rmdep:
 	-@ rm depends

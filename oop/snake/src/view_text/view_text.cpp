@@ -359,6 +359,7 @@ void View_text::draw_snakes(Model* model)
     Vector offset{Lft_padding + 1, Top_padding + 1};
     set_attr(BLACK, GREEN, 1, 0, 0);
 
+    unsigned snake_num = 0;
     for (const Snake& snake : model->snakes)
     {
         if (snake.is_alive())
@@ -376,10 +377,12 @@ void View_text::draw_snakes(Model* model)
             if (iter != head)
                 putxy(Snake_symb, coords + offset);
             else 
-                putxy(Snake_head_symb, coords + offset);
+                putxy('0' + snake_num, coords + offset);
 
             iter++;
         }
+
+        snake_num += 1;
     }
 }
 

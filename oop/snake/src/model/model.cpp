@@ -45,6 +45,8 @@ static Coords get_rand_coords(const Vector& field_size)
 void Rabbit::update(const Coords& field_size, const list<Rabbit>& rabbits,
                                               const list<Snake>& snakes)
 {
+    return;
+
     update_ct++;
     if ((update_ct % UPDATE_FREQ) != 0)
         return;
@@ -287,6 +289,33 @@ void Model::process_events()
 
 //---------------------------------------------------------
 
+bool Model::generate_rabbit(const Coords& pos)
+{
+    for (const Rabbit& rabbit : rabbits)
+    {
+        Coords coords = rabbit.get_coords();
+
+        if (pos.x() == coords.x() && pos.y() == coords.y())
+            return false;
+    }
+
+    for (const Snake& snake : snakes)
+    {
+        Coords_list coords_list = snake.get_coords_list();
+
+        for (const Coords& coords : coords_list)
+        {
+            if (pos.x() == coords.x() && pos.y() == coords.y())
+                return false;
+        }
+    }
+
+    rabbits.push_back(pos);
+    return true;
+}
+
+//---------------------------------------------------------
+
 void Model::generate_rabbits(const Vector& field_size, const int rnum)
 {
     for (unsigned iter = 0; iter < (unsigned) rnum; iter++)
@@ -431,8 +460,8 @@ bool Model::field_is_free_for_snake(const Coords& coords)
 
     Vector wnsz = View::get_view()->get_winsize();
 
-    if (coords.x() >= wnsz.x() - 1
-     || coords.y() >= wnsz.y() - 1)
+    if (coords.x() > wnsz.x() - 1
+     || coords.y() > wnsz.y() - 1)
         return false;
 
     return true;
@@ -465,8 +494,8 @@ bool Model::field_is_free(const Coords& coords)
 
     Vector wnsz = View::get_view()->get_winsize();
 
-    if (coords.x() >= wnsz.x() - 1
-     || coords.y() >= wnsz.y() - 1)
+    if (coords.x() > wnsz.x() - 1
+     || coords.y() > wnsz.y() - 1)
         return false;
 
     return true;

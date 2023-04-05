@@ -92,26 +92,24 @@ void Snake_ctrl_smart_AI::on_timer()
     Direction dirs[DIRECTIONS_NUM] = {};
     
     get_directions(snake, dirs);
-    check_directions(model, dirs, snake_head);
+    check_directions(model, dirs, snake_head); // TODO 
+    get_new_heads(snake_head, dirs);
 
-    Dirs_prior dirs_prior = get_dirs_prior(snake, closest.x() - snake_head.x(), 
-                                                  closest.y() - snake_head.y());
+    Direction_type dir = NONE;
 
-    for (const auto& option : dirs_prior)
+    if (type_ == RIGHT_ANGLES)
+        dir = get_dir_min(dirs, snake_head, closest);
+    else if (type_ == DIAGONAL)
+        dir = get_dir_max(dirs, snake_head, closest);
+
+    // TODO
+
+    switch(dir)
     {
-        if (dirs[option].safe == true)
-        {
-            if (option == RIGHT)
-            {
-                snake->turn_right();
-            }
-            else if (option == LEFT)
-            {
-                snake->turn_left();
-            }
-
-            break;
-        }
+        case LEFT : snake->turn_left(); break;
+        case RIGHT: snake->turn_left(); break;
+        case FRONT: rbeak;
+        default: break;
     }
 
     Snake_ctrl_AI::on_timer();
@@ -132,6 +130,16 @@ Coords Snake_ctrl_smart_AI::get_closest_rabbit(Model* model, const Coords& snake
     }
 
     return closest;
+}
+
+//---------------------------------------------------------
+
+void Snake_ctrl_AI::get_new_heads(const Coords& snake_head, Direction (&dirs) [DIRECTIONS_NUM])
+{
+    for (unsigned iter = 0; iter < DIRECTIONS_NUM; iter++)
+    {
+        dirs[iter].new_head = snake_head + dirs[iter].dir;
+    }
 }
 
 //---------------------------------------------------------
@@ -191,184 +199,34 @@ void Snake_ctrl_AI::check_directions(Model* model, Direction (&dirs) [DIRECTIONS
 
 //---------------------------------------------------------
 
-Snake_ctrl_smart_AI::Dirs_prior 
-Snake_ctrl_smart_AI::get_dirs_prior(Snake* snake, ssize_t delta_x, ssize_t delta_y)
+Snake_ctrl_AI::Direction_type
+Snake_ctrl_AI::get_dir_min(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
+                                                               const Coords& rabbit)
 {
-    Dirs_prior dirs_prior{};
+    Coords dist = rabbit - snake_head;
 
-    bool direction_factor = false;
+    
+}
 
-    switch (type_)
-    {
-        case RIGHT_ANGLES: direction_factor = (abs(delta_x) <= abs(delta_y)); break;
-        case DIAGONAL    : direction_factor = (abs(delta_x) >= abs(delta_y)); break;
-        default: break;
-    }
+//---------------------------------------------------------
 
-    if (abs(delta_x) == 0 && abs(delta_y) == 0)
-    {
-        dirs_prior = {FRONT, RIGHT, LEFT};
-    }
-    else if (direction_factor)
-    {
-        switch (snake->get_direction())
-        {
-            case Snake::Snake_dir::UP: 
-            {
-                if (delta_x < 0)
-                    dirs_prior = {LEFT, FRONT, RIGHT};
-                else if (delta_x > 0)
-                    dirs_prior = {RIGHT, FRONT, LEFT};
-                else
-                {
-                    if (delta_y <= 0)
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                    else 
-                        dirs_prior = {RIGHT, LEFT, FRONT};
-                }
+Snake_ctrl_AI::Direction_type
+Snake_ctrl_AI::get_dir_max(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
+                                                               const Coords& rabbit)
+{
+    Coords dist = rabbit - snake_head;
 
-                break; 
-            }
 
-            case Snake::Snake_dir::LEFT:
-            {
-                if (delta_x < 0)
-                    dirs_prior = {FRONT, RIGHT, LEFT};
-                else if (delta_x > 0)
-                    dirs_prior = {RIGHT, LEFT, FRONT};
-                else 
-                {
-                    if (delta_y < 0)
-                        dirs_prior = {RIGHT, FRONT, LEFT};
-                    else if (delta_y > 0)
-                        dirs_prior = {LEFT, FRONT, RIGHT};
-                    else 
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                }
 
-                break;
-            }
+}
 
-            case Snake::Snake_dir::RIGHT:
-            {
-                if (delta_x < 0)
-                    dirs_prior = {RIGHT, LEFT, FRONT};
-                else if (delta_x > 0)
-                    dirs_prior = {FRONT, RIGHT, LEFT};
-                else 
-                {
-                    if (delta_y < 0)
-                        dirs_prior = {LEFT, FRONT, RIGHT};
-                    else if (delta_y > 0)
-                        dirs_prior = {RIGHT, FRONT, LEFT};
-                    else 
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                }
+//---------------------------------------------------------
 
-                break;
-            }
+Snake_ctrl_AI::Direction_type
+Snake_ctrl_AI::get_dir_keep(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
+                                                                const Coords& rabbit)
+{
 
-            case Snake::Snake_dir::DOWN:
-            {
-                if (delta_x < 0)
-                    dirs_prior = {RIGHT, FRONT, LEFT};
-                else if (delta_x > 0)
-                    dirs_prior = {LEFT, FRONT, RIGHT};
-                else 
-                {
-                    if (delta_y >= 0)
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                    else 
-                        dirs_prior = {RIGHT, LEFT, FRONT};
-                }
-
-                break;
-            }
-
-            default: break;
-        }
-    }
-    else // delta_x > delta_y
-    {
-        switch (snake->get_direction())
-        {
-            case Snake::Snake_dir::UP: 
-            {
-                if (delta_y < 0)
-                    dirs_prior = {FRONT, RIGHT, LEFT};
-                else if (delta_y > 0)
-                    dirs_prior = {RIGHT, LEFT, FRONT};
-                else 
-                {
-                    if (delta_x < 0)
-                        dirs_prior = {LEFT, FRONT, RIGHT};
-                    else if (delta_x > 0)
-                        dirs_prior = {RIGHT, FRONT, LEFT};
-                    else 
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                }
-
-                break; 
-            }
-
-            case Snake::Snake_dir::LEFT:
-            {
-                if (delta_y < 0)
-                    dirs_prior = {RIGHT, FRONT, LEFT};
-                else if (delta_y > 0)
-                    dirs_prior = {LEFT, FRONT, RIGHT};
-                else
-                {
-                    if (delta_x <= 0)
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                    else 
-                        dirs_prior = {RIGHT, LEFT, FRONT};
-                }
-
-                break;
-            }
-
-            case Snake::Snake_dir::RIGHT:
-            {
-                if (delta_y < 0)
-                    dirs_prior = {LEFT, FRONT, RIGHT};
-                else if (delta_y > 0)
-                    dirs_prior = {RIGHT, FRONT, LEFT};
-                else 
-                {
-                    if (delta_x >= 0)
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                    else 
-                        dirs_prior = {RIGHT, LEFT, FRONT};
-                }
-
-                break;
-            }
-
-            case Snake::Snake_dir::DOWN:
-            {
-                if (delta_y < 0)
-                    dirs_prior = {RIGHT, LEFT, FRONT};
-                else if (delta_y > 0)
-                    dirs_prior = {FRONT, RIGHT, LEFT};
-                else 
-                {
-                    if (delta_x < 0)
-                        dirs_prior = {RIGHT, FRONT, LEFT};
-                    else if (delta_x > 0)
-                        dirs_prior = {LEFT, FRONT, RIGHT};
-                    else 
-                        dirs_prior = {FRONT, RIGHT, LEFT};
-                }
-
-                break;
-            }
-
-            default: break;
-        }
-    }
-
-    return dirs_prior;
 }
 
 //---------------------------------------------------------

@@ -79,12 +79,20 @@ class Snake_ctrl_AI : public Snake_ctrl, public Subscriber_on_timer
         struct Direction 
         {
             Coords dir;
+            Coords new_head;
             bool safe;
         };
 
         void get_directions(Snake* snake, Direction (&dirs) [DIRECTIONS_NUM]);
+        void Snake_ctrl_AI::get_new_heads(const Coords& snake_head, Direction (&dirs) [DIRECTIONS_NUM])
+
+
         void check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head);
         Direction_type get_random_safe_direction(Model* model, Snake* snake, const Coords& snake_head);
+
+        Direction_type get_dir_min (Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit);
+        Direction_type get_dir_max (Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit);
+        Direction_type get_dir_keep(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit);
 
     public:
 
@@ -151,7 +159,6 @@ class Snake_ctrl_smart_AI : public Snake_ctrl_AI
     private:
 
         Coords get_closest_rabbit(Model* model, const Coords& snake_head);
-        Dirs_prior get_dirs_prior(Snake* snake, ssize_t delta_x, ssize_t delta_y);
 };
 
 //---------------------------------------------------------

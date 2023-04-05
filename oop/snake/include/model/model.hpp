@@ -17,6 +17,8 @@ using std::list;
 using Coords     = Vector;
 using Coords_list = std::list<Coords>;
 
+static const unsigned Model_timeout = 200U;
+
 //=========================================================
 
 class Snake_ctrl;
@@ -36,7 +38,7 @@ class Model : public Subscriber_on_timer
         list<Snake> snakes{};
 
         Model():
-        Subscriber_on_timer(100U)
+        Subscriber_on_timer(Model_timeout)
         {
             subscribe_on_timer();
         }
@@ -46,6 +48,7 @@ class Model : public Subscriber_on_timer
         ~Model()                             = default;
 
         void generate_rabbits(const Coords& field_size, const int rnum);
+        bool generate_rabbit(const Coords& pos);
         void generate_snake(Coords& start_pos, Snake_ctrl* controller);
         bool field_is_free(const Coords& coords);
         bool field_is_free_for_snake(const Coords& coords);
@@ -154,7 +157,7 @@ class Snake
             LOSE = 1
         };
 
-        static constexpr unsigned Snake_start_len = 7;
+        static constexpr unsigned Snake_start_len = 1;
 
         Snake(const Coords_list& coords_list)
         {
