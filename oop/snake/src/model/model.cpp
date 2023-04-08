@@ -461,7 +461,9 @@ bool Model::field_is_free_for_snake(const Coords& coords)
     Vector wnsz = View::get_view()->get_winsize();
 
     if (coords.x() > wnsz.x() - 1
-     || coords.y() > wnsz.y() - 1)
+     || coords.y() > wnsz.y() - 1
+     || coords.x() < 0
+     || coords.y() < 0)
         return false;
 
     return true;

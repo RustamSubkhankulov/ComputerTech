@@ -5,6 +5,20 @@
 
 #include "../../include/controller/controller.hpp"
 
+//---------------------------------------------------------
+
+// #define DEBUG_CTRL
+
+#ifdef DEBUG_CTRL 
+
+    #define DEBUG_FPRINTF(...) fprintf(__VA_ARGS__)
+
+#else 
+    
+    #define DEBUG_FPRINTF(...)
+
+#endif 
+
 //=========================================================
 
 void Snake_ctrl_human::on_key(int key)
@@ -89,27 +103,38 @@ void Snake_ctrl_smart_AI::on_timer()
 
     Coords closest = get_closest_rabbit(model, snake_head);
 
+    DEBUG_FPRINTF(stderr, "//=================================\n");
+    DEBUG_FPRINTF(stderr, "closest x= %ld y = %ld \n", closest.x(), closest.y());
+
     Direction dirs[DIRECTIONS_NUM] = {};
     
     get_directions(snake, dirs);
-    check_directions(model, dirs, snake_head); // TODO 
     get_new_heads(snake_head, dirs);
+    check_directions(model, dirs); 
 
     Direction_type dir = NONE;
 
-    if (type_ == RIGHT_ANGLES)
-        dir = get_dir_min(dirs, snake_head, closest);
-    else if (type_ == DIAGONAL)
-        dir = get_dir_max(dirs, snake_head, closest);
+    switch (type_)
+    {
+        case RIGHT_ANGLES: dir = get_dir(dirs, snake_head, closest, MIN); break;
+        case DIAGONAL:     dir = get_dir(dirs, snake_head, closest, MAX); break;
+        case KEEP_DIR:     dir = get_dir_keep(dirs, snake_head, closest); break;
+        default: break;
+    }
 
-    // TODO
+    if (dir == NONE)
+        dir = get_random_safe_direction(model, snake, snake_head);
 
-    switch(dir)
+    DEBUG_FPRINTF(stderr, "direction: %d \n", (int) dir);
+
+    switch (dir)
     {
         case LEFT : snake->turn_left(); break;
-        case RIGHT: snake->turn_left(); break;
-        case FRONT: rbeak;
-        default: break;
+        case RIGHT: snake->turn_right(); break;
+        case DIRECTIONS_NUM: break;
+        case FRONT: break;
+        case NONE:  break;
+        default:    break;
     }
 
     Snake_ctrl_AI::on_timer();
@@ -136,9 +161,15 @@ Coords Snake_ctrl_smart_AI::get_closest_rabbit(Model* model, const Coords& snake
 
 void Snake_ctrl_AI::get_new_heads(const Coords& snake_head, Direction (&dirs) [DIRECTIONS_NUM])
 {
+    
+    DEBUG_FPRINTF(stderr, "snake head now is x = %ld y = %ld \n", snake_head.x(), snake_head.y());
+
     for (unsigned iter = 0; iter < DIRECTIONS_NUM; iter++)
     {
         dirs[iter].new_head = snake_head + dirs[iter].dir;
+
+        DEBUG_FPRINTF(stderr, "HEAD[%u] is x = %ld y = %ld \n", iter, dirs[iter].new_head.x(), dirs[iter].new_head.y());
+
     }
 }
 
@@ -146,7 +177,7 @@ void Snake_ctrl_AI::get_new_heads(const Coords& snake_head, Direction (&dirs) [D
 
 void Snake_ctrl_AI::get_directions(Snake* snake, Direction (&dirs) [DIRECTIONS_NUM])
 {
-    switch(snake->get_direction())
+    switch (snake->get_direction())
     {
         case Snake::Snake_dir::UP: 
         {
@@ -190,43 +221,93 @@ void Snake_ctrl_AI::get_directions(Snake* snake, Direction (&dirs) [DIRECTIONS_N
 
 //---------------------------------------------------------
 
-void Snake_ctrl_AI::check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head)
+void Snake_ctrl_AI::check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM])
 {
-    dirs[FRONT].safe = model->field_is_free_for_snake(snake_head + dirs[FRONT].dir);
-    dirs[LEFT] .safe = model->field_is_free_for_snake(snake_head + dirs[LEFT] .dir);
-    dirs[RIGHT].safe = model->field_is_free_for_snake(snake_head + dirs[RIGHT].dir);
+    dirs[FRONT].safe = model->field_is_free_for_snake(dirs[FRONT].new_head);
+    dirs[LEFT] .safe = model->field_is_free_for_snake(dirs[LEFT] .new_head);
+    dirs[RIGHT].safe = model->field_is_free_for_snake(dirs[RIGHT].new_head);
+}
+
+//---------------------------------------------------------
+
+Snake_ctrl_AI::Direction_type 
+Snake_ctrl_AI::get_dir_keep(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit)
+{
+    Coords dist = rabbit - snake_head;
+
+    DEBUG_FPRINTF(stderr, "dist: x = %ld y = %ld \n", dist.x(), dist.y());
+
+    Direction_type direction = NONE;
+
+    for (unsigned iter = 0; iter < DIRECTIONS_NUM; iter++)
+    {
+        if (dirs[iter].safe == false)
+            continue;
+
+        Coords new_dist = rabbit - dirs[iter].new_head;
+        
+        if (new_dist.len() < dist.len())
+        {
+            direction = (Direction_type) iter;
+            break;
+        }
+    }
+
+    DEBUG_FPRINTF(stderr, "get_dir() decided: %d \n", direction);
+    return direction;
 }
 
 //---------------------------------------------------------
 
 Snake_ctrl_AI::Direction_type
-Snake_ctrl_AI::get_dir_min(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
-                                                               const Coords& rabbit)
+Snake_ctrl_AI::get_dir(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
+                                                           const Coords& rabbit, Snake_ctrl_AI::Movement_type mov_type)
 {
     Coords dist = rabbit - snake_head;
-
     
-}
+    DEBUG_FPRINTF(stderr, "dist: x = %ld y = %ld \n", dist.x(), dist.y());
 
-//---------------------------------------------------------
+    Direction_type direction = NONE;
 
-Snake_ctrl_AI::Direction_type
-Snake_ctrl_AI::get_dir_max(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
-                                                               const Coords& rabbit)
-{
-    Coords dist = rabbit - snake_head;
+    for (unsigned iter = 0; iter < DIRECTIONS_NUM; iter++)
+    {
+        if (dirs[iter].safe == false)
+            continue;
 
+        Coords new_dist = rabbit - dirs[iter].new_head;
 
+        DEBUG_FPRINTF(stderr, "new_dist[%u]: x = %ld y = %ld \n", iter, new_dist.x(), new_dist.y());
 
-}
+        if ((abs(dist.y()) == 0 && abs(dist.x()) != 0)
+         || (mov_type == MIN && abs(dist.x()) != 0 && abs(dist.x()) <= abs(dist.y()))
+         || (mov_type == MAX && abs(dist.x()) >= abs(dist.y()))) // decreasing delta x
+        {
 
-//---------------------------------------------------------
+            DEBUG_FPRINTF(stderr, "decreasing delta x \n");
 
-Snake_ctrl_AI::Direction_type
-Snake_ctrl_AI::get_dir_keep(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
-                                                                const Coords& rabbit)
-{
+            if (abs(new_dist.x()) < abs(dist.x()))
+            {
+                direction = (Direction_type) iter;
+                break;
+            }
+        }
+        else if ((abs(dist.x()) == 0 && abs(dist.y()) != 0)
+              || (mov_type == MAX && abs(dist.x()) <= abs(dist.y()))
+              || (mov_type == MIN && abs(dist.x()) >= abs(dist.y())))  
+        {
 
+            DEBUG_FPRINTF(stderr, "decreasing delta y \n");
+
+            if (abs(new_dist.y()) < abs(dist.y()))
+            {
+                direction = (Direction_type) iter;
+                break;
+            }
+        }
+    }
+
+    DEBUG_FPRINTF(stderr, "get_dir() decided: %d \n", direction);
+    return direction;
 }
 
 //---------------------------------------------------------
@@ -237,7 +318,8 @@ Snake_ctrl_AI::get_random_safe_direction(Model* model, Snake* snake, const Coord
     Direction dirs[DIRECTIONS_NUM] = {};
     
     get_directions(snake, dirs);
-    check_directions(model, dirs, snake_head);
+    get_new_heads(snake_head, dirs);
+    check_directions(model, dirs);
 
     if (dirs[FRONT].safe == false 
      && dirs[RIGHT].safe == false
@@ -252,7 +334,7 @@ Snake_ctrl_AI::get_random_safe_direction(Model* model, Snake* snake, const Coord
 
     } while (dirs[random].safe != true);
 
-    return (Direction_type) random;
+    return random;
 }
 
 //---------------------------------------------------------

@@ -76,6 +76,12 @@ class Snake_ctrl_AI : public Snake_ctrl, public Subscriber_on_timer
             DIRECTIONS_NUM
         };
 
+        enum Movement_type
+        {
+            MIN  = 0,
+            MAX  = 1
+        };
+
         struct Direction 
         {
             Coords dir;
@@ -84,14 +90,13 @@ class Snake_ctrl_AI : public Snake_ctrl, public Subscriber_on_timer
         };
 
         void get_directions(Snake* snake, Direction (&dirs) [DIRECTIONS_NUM]);
-        void Snake_ctrl_AI::get_new_heads(const Coords& snake_head, Direction (&dirs) [DIRECTIONS_NUM])
+        void get_new_heads(const Coords& snake_head, Direction (&dirs) [DIRECTIONS_NUM]);
+        void check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM]);
 
-
-        void check_directions(Model* model, Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head);
         Direction_type get_random_safe_direction(Model* model, Snake* snake, const Coords& snake_head);
 
-        Direction_type get_dir_min (Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit);
-        Direction_type get_dir_max (Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit);
+        Direction_type get_dir(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, 
+                                                                   const Coords& rabbit, Movement_type mov_type);
         Direction_type get_dir_keep(Direction (&dirs) [DIRECTIONS_NUM], const Coords& snake_head, const Coords& rabbit);
 
     public:
@@ -125,22 +130,13 @@ class Snake_ctrl_smart_AI : public Snake_ctrl_AI
         enum Smart_AI_type
         {
             RIGHT_ANGLES = 0,
-            DIAGONAL = 1
+            DIAGONAL = 1,
+            KEEP_DIR = 2
         };
 
     private:
 
         Smart_AI_type type_;
-
-        enum Direction_priority
-        {
-            HIGH_PRIOR = 0,
-            MID_PRIOR  = 1,
-            LOW_PRIOR  = 2,
-            PRIORS_NUM
-        };
-
-        using Dirs_prior = std::array<Direction_type, PRIORS_NUM>;
 
     public:
 

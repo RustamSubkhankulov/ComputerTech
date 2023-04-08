@@ -49,7 +49,7 @@ int main(const int argc, const char** argv)
     // model.generate_snake(snake_start_pos1, &human_ctrl1);
     // model.generate_snake(snake_start_pos2, &human_ctrl2);
 
-    model.generate_rabbits(field_size, 100);
+    model.generate_rabbits(field_size, 10);
     model.generate_rabbit(Coords{0, 0});
     model.generate_rabbit(Coords{0, field_size.y() - 1});
     model.generate_rabbit(Coords{field_size.x() - 1, 0});

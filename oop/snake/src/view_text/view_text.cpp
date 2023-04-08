@@ -377,7 +377,7 @@ void View_text::draw_snakes(Model* model)
             if (iter != head)
                 putxy(Snake_symb, coords + offset);
             else 
-                putxy('0' + snake_num, coords + offset);
+                putxy((char) ('0' + snake_num), coords + offset);
 
             iter++;
         }
