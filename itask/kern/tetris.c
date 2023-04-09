@@ -44,10 +44,9 @@ static struct Tetris_gamestate
 
     bool lines_updated;
     uint64_t frames_per_cell;
-
+    
 } Gamestate;
 
-static int Last_pressed_key = 0;
 
 static void set_up_res(void);
 static void draw_initial(void);
@@ -606,7 +605,7 @@ static void run_loop(void)
 
 static void model_update_on_key(int key)
 {
-    Last_pressed_key = key;
+    model_process_key(key);
 }
 
 static void model_update_on_timer(void)
@@ -623,13 +622,11 @@ static void model_update_on_timer(void)
     if (Gamestate.cur_fig.type == NONE)
         model_new_cur_fig();
     else 
-    {
-        model_process_key(Last_pressed_key);
+    {   
         model_update_field(frame_ct);
     }
 
     frame_ct += 1;
-
     return;
 }
 
