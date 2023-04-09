@@ -17,7 +17,7 @@ using std::list;
 using Coords     = Vector;
 using Coords_list = std::list<Coords>;
 
-static const unsigned Model_timeout = 500U;
+static const unsigned Model_timeout = 100U;
 
 //=========================================================
 
@@ -83,7 +83,7 @@ class Rabbit
     friend class Model;
 
     unsigned update_ct = 0;
-    enum : unsigned { UPDATE_FREQ = 500U };
+    enum : unsigned { UPDATE_FREQ = 100U };
     bool alive = true;
 
     Coords coords_{};

@@ -7,7 +7,7 @@ CC   = gcc
 CXXFLAGS = -O0 -g 
 CFLAGS   = -O0 -g 
 
-OBJ_DIR = obj
+OBJ_DIR = build
 SRC_DIR = src
 INC_DIR = include
 
@@ -71,6 +71,7 @@ SRC_PATH = $(SRC_DIR)/$(1)/$(1).cpp
 MODULES = model view view_text view_graph controller main vector
 
 OBJ = $(foreach module, $(MODULES), $(OBJ_DIR)/$(module).o)
+DEP = $(foreach module, $(MODULES), $(OBJ_DIR)/$(module).d)
 SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))
 
 #==========================================================
@@ -79,6 +80,20 @@ SRC = $(foreach module, $(MODULES), $(call SRC_PATH,$(module)))
 
 all: dir mkdep build
 build: snake 
+
+#==========================================================
+# DEPENDENCIES
+#==========================================================
+
+mkdep: $(DEP)
+
+define depend_rule =
+$(OBJ_DIR)/$(1).d: $(call SRC_PATH,$(1))
+	$(CXX) $(call SRC_PATH,$(1)) -MM -MT"$(OBJ_DIR)/$(1).o" -o $(OBJ_DIR)/$(1).d
+    -include $(OBJ_DIR)/$(1).d
+endef
+
+$(foreach module, $(MODULES), $(eval $(call depend_rule,$(module))))
 
 #----------------------------------------------------------
 
@@ -98,24 +113,17 @@ $(foreach module, $(MODULES), $(eval $(call build_rule,$(module))))
 # .PHONY TARGETS
 #==========================================================
 
-.PHONY: dir mkdep clean rmdep
+.PHONY: dir mkdep clean
 
 dir:
 	@ mkdir -p $(OBJ_DIR)
 
 clean:
 	-@ rm $(OBJ_DIR)/*.o 
+	-@ rm $(OBJ_DIR)/*.d 
 	-@ rm snake
 
-#==========================================================
-# DEPENDENCIES
-#==========================================================
 
-mkdep: $(SRC)
-	@ $(CXX) -MM $(SRC) > depends
-
-rmdep:
-	-@ rm depends
 
 #==========================================================
 
