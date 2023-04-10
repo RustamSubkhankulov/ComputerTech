@@ -53,6 +53,10 @@ panic:
     panic("vga: initialization failed: %i \n", err);
 }
 
+#define MAP_MSG(dstart, pstart, size) cprintf("MAPPING [0x%010lx; 0x%010lx] to [0x%010lx; 0x%010lx]\n", \
+                                                          (long unsigned) (pstart), (long unsigned) ((pstart) + (size)), \
+                                                          (long unsigned) (dstart), (long unsigned) ((dstart) + (size))) 
+
 static int vga_map_memory()
 {
     if (trace_gpu)
@@ -70,14 +74,26 @@ static int vga_map_memory()
     Vga_dev.fb   = (uint32_t*) Vga_dev.pci_dev_general.bar_addr[Fb_barn].memory;
     Vga_dev.mmio = (void*) Vga_dev.pci_dev_general.bar_addr[MMIO_barn].memory;
 
-    // map_addr_early_boot((uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size);
-    Vga_dev.mmio = (void*) mmio_map_region((uintptr_t) Vga_dev.mmio, MMIO_size);
+    // MMIO isn't used now 
 
-    int err = map_physical_region(&kspace, (uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size, PROT_R | PROT_W);
-    if (err < 0) return err;
+    // map_addr_early_boot((uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size);
+    // Vga_dev.mmio = (void*) mmio_map_region((uintptr_t) Vga_dev.mmio, MMIO_size);
+
+    // int err = map_physical_region(&kspace, (uintptr_t) Vga_dev.fb, (uintptr_t) Vga_dev.fb, Fb_size, PROT_R | PROT_W);
+    // if (err < 0) return err;
+
+    // int err = map_physical_region(&kspace, FRAMEBUFFER, (uintptr_t) Vga_dev.fb, Fb_size, PROT_R | PROT_W | PROT_WC);
+    // if (err < 0) return err;
+
+    MAP_MSG(FRAMEBUFFER, (uintptr_t) Vga_dev.fb, FRAMEBUFFER_SIZE);
+    if (map_physical_region(&kspace, FRAMEBUFFER, (uintptr_t) Vga_dev.fb, FRAMEBUFFER_SIZE, PROT_R | PROT_W | PROT_WC)) 
+        panic("Init memory: mapping [FRAMEBUFFER, FRAMEBUFFER + uefi_lp->FrameBufferSize] unsuccessful)"); 
+
+    // Vga_dev.fb = (volatile uint32_t*) 0x801ee00000;     
+    Vga_dev.fb = (volatile uint32_t*) (FRAMEBUFFER);     
 
     if (trace_gpu)
-        cprintf("vga: memory mapped. \n");
+        cprintf("vga: memory mapped: framebuffer at %p\n", Vga_dev.fb);
     return 0;
 }
 

@@ -173,9 +173,9 @@ enum Vbe_dispi_index_enable_flag
 void     vbe_dispi_set_reg(enum Vbe_dispi_reg reg, uint16_t value);
 uint16_t vbe_dispi_get_reg(enum Vbe_dispi_reg reg); 
 
-bool vbe_dispi_check_bit(enum Vbe_dispi_reg reg, uint8_t bitno);
-void vbe_dispi_clear_bit(enum Vbe_dispi_reg reg, uint8_t bitno);
-void vbe_dispi_set_bit  (enum Vbe_dispi_reg reg, uint8_t bitno);
+bool vbe_dispi_check_bit(enum Vbe_dispi_reg reg, uint16_t bit);
+void vbe_dispi_clear_bit(enum Vbe_dispi_reg reg, uint16_t bit);
+void vbe_dispi_set_bit  (enum Vbe_dispi_reg reg, uint16_t bit);
 
 bool vbe_dispi_check_bits(enum Vbe_dispi_reg reg, uint16_t bits);
 void vbe_dispi_clear_bits(enum Vbe_dispi_reg reg, uint16_t bits);

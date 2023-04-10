@@ -26,13 +26,13 @@ static const float Tetris_speed_table[TETRIS_LEVELS_NUM] = { 0.016670f, 0.021017
 #define INITIAL_LEVEL    1U
 #define LINES_PER_LEVEL 10U
 
-static const pair16_t Resolution = {.x = 1024, .y = 768};
-
-enum Direction
+enum Tetris_ctrl_key
 {
-    DOWN  = 1,
-    RIGHT = 2,
-    LEFT  = 3
+    NO_ACTION = 0,
+    DOWN   = 1,
+    RIGHT  = 2,
+    LEFT   = 3,
+    ROT    = 4
 };
 
 typedef enum Figure_type
@@ -280,7 +280,9 @@ const static color32bpp_t Next_bar_bg_clr   = {.rgb = 0x00080819};
 const static color32bpp_t Hold_bar_outl_clr = {.rgb = 0x0000FAFF};
 const static color32bpp_t Hold_bar_bg_clr   = {.rgb = 0x00080819};
 
+const static color32bpp_t Red_color         = {.rgb = 0x00E3242B};
 const static color32bpp_t White_color       = {.rgb = 0x00FFFFFF};
+const static color32bpp_t Black_color       = {.rgb = 0x00000000};
 
 int tetris(void);
 

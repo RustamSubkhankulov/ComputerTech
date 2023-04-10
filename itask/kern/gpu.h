@@ -14,7 +14,7 @@
 
 static const pair16_t Display_start_res      = {.x = 1024U, .y = 768U};
 static const pair16_t Display_max_res        = {.x = 1920U, .y = 1080U};
-static const pair16_t Virt_display_start_res = {.x = Display_start_res.x, .y = Fb_size / (sizeof(uint32_t) * Display_start_res.x)};
+static const pair16_t Virt_display_start_res = {.x = 1024U, .y = Fb_size / (sizeof(uint32_t) * 1024U)};
 
 static const enum Vbe_dispi_bpp Display_bpp  = VBE_DISPI_BPP_32;
 

@@ -21,28 +21,28 @@ uint16_t vbe_dispi_get_reg(enum Vbe_dispi_reg reg)
     return inw(VBE_DISPI_DATA_PORT);
 }
 
-bool vbe_dispi_check_bit(enum Vbe_dispi_reg reg, uint8_t bitno)
+bool vbe_dispi_check_bit(enum Vbe_dispi_reg reg, uint16_t bit)
 {
     assert(reg <= VBE_DISPI_INDEX_Y_OFFSET);
     
-    return vbe_dispi_get_reg(reg) & (1 << bitno);
+    return vbe_dispi_get_reg(reg) & (bit);
 }
 
-void vbe_dispi_clear_bit(enum Vbe_dispi_reg reg, uint8_t bitno)
+void vbe_dispi_clear_bit(enum Vbe_dispi_reg reg, uint16_t bit)
 {
     assert(reg <= VBE_DISPI_INDEX_Y_OFFSET);
 
     uint16_t value = vbe_dispi_get_reg(reg);
-    vbe_dispi_set_bit(reg, value & (~(1 << bitno)));
+    vbe_dispi_set_bit(reg, value & (~(bit)));
     return;
 }
 
-void vbe_dispi_set_bit(enum Vbe_dispi_reg reg, uint8_t bitno)
+void vbe_dispi_set_bit(enum Vbe_dispi_reg reg, uint16_t bit)
 {
     assert(reg <= VBE_DISPI_INDEX_Y_OFFSET);
 
     uint16_t value = vbe_dispi_get_reg(reg);
-    vbe_dispi_set_bit(reg, value | (1 << bitno));
+    vbe_dispi_set_bit(reg, value | (bit));
     return;
 }
 

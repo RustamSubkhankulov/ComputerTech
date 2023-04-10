@@ -2050,9 +2050,9 @@ init_memory(void) {
     // Map [X86ADDR(KERN_PF_STACK_TOP - KERN_PF_STACK_SIZE), KERN_PF_STACK_TOP] to
     //     [PADDR(pfstack), PADDR(pfstacktop)] as RW-
 
-
-    if (map_physical_region(&kspace, FRAMEBUFFER, uefi_lp->FrameBufferBase, uefi_lp->FrameBufferSize, PROT_R | PROT_W | PROT_WC)) 
-        panic("Init memory: mapping [FRAMEBUFFER, FRAMEBUFFER + uefi_lp->FrameBufferSize] unsuccessful)"); 
+    // MAP_MSG(FRAMEBUFFER, uefi_lp->FrameBufferBase, FRAMEBUFFER_SIZE);
+    // if (map_physical_region(&kspace, FRAMEBUFFER, uefi_lp->FrameBufferBase, FRAMEBUFFER_SIZE, PROT_R | PROT_W | PROT_WC)) 
+    //     panic("Init memory: mapping [FRAMEBUFFER, FRAMEBUFFER + uefi_lp->FrameBufferSize] unsuccessful)"); 
         
     if (map_physical_region(&kspace, X86ADDR(KERN_BASE_ADDR), 0, MIN(MAX_LOW_ADDR_KERN_SIZE, max_memory_map_addr), PROT_R | PROT_W | ALLOC_WEAK)) 
         panic("Init memory: mapping [X86ADDR(KERN_BASE_ADDR),MIN(MAX_LOW_ADDR_KERN_SIZE, max_memory_map_addr)] unsuccessful)"); 

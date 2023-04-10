@@ -46,8 +46,10 @@ void srfc_blit(srfc_t* surface, void* buffer, uint16_t bpp, pair16_t dst, pair16
 
     for (size_t iter = 0; iter < copyres.x * copyres.y; iter++)
     {
-        surface->buffer[offs_by_coords_32bpp(cur, surface->res.x)] = *((uint32_t*) buffer);
-    
+        // surface->buffer[offs_by_coords_32bpp(cur, surface->res.x)] = *((uint32_t*) buffer);
+        color32bpp_t clr = {.rgb = *((uint32_t*) buffer)};
+        srfc_set_pxl(surface, cur, clr);
+
         cur.x += 1;
 
         if (cur.x - dst.x >= copyres.x)
@@ -577,11 +579,12 @@ const static char Font8x8_basic[128][8] =
 void srfc_putchar(srfc_t* surface, char symb, pair16_t coords, color32bpp_t color, uint8_t ppb)
 {
     assert(surface->bpp == 32);
+    assert(symb > 0);
 
     size_t offs = offs_by_coords_32bpp(coords, surface->res.x);
     uint16_t resx = surface->res.x;
 
-    const char* chr = Font8x8_basic[(unsigned) symb];
+    const char* chr = Font8x8_basic[(unsigned char) symb];
 
     for (size_t height = 0; height < 8; height++)
     {
