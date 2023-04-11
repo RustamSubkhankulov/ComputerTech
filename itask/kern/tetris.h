@@ -32,7 +32,8 @@ enum Tetris_ctrl_key
     DOWN   = 1,
     RIGHT  = 2,
     LEFT   = 3,
-    ROT    = 4
+    ROT    = 4,
+    HOLD   = 5,
 };
 
 typedef enum Figure_type

@@ -56,6 +56,7 @@ static struct Tetris_gamestate
     uint64_t frames_per_cell;
 
     bool pg_updated;
+    bool use_hold;
 
 } Gamestate;
 
@@ -103,13 +104,14 @@ static void model_update_on_timer(void);
 static enum Tetris_ctrl_key int2ctrl_key(int key);
 static bool model_is_line_filled(unsigned line_no);
 
+static void model_process_hold(void);
 static void model_update_level(void);
 static void model_process_key(enum Tetris_ctrl_key key);
 static void model_process_one_cycle(void);
 static void model_move_lines(unsigned line_no);
 static void model_remove_filled_lines(void);
 static void model_emplace_cur_fig(void);
-static void model_new_cur_fig(void);
+static void model_new_fig(void);
 static void model_update_field(uint64_t frame_ct);
 static void model_update_score(unsigned removed_lines);
 
@@ -137,7 +139,7 @@ int tetris(void)
 
 static void set_up_initial_gamestate(void)
 {
-    Gamestate.game_is_on = false;
+    Gamestate.game_is_on = true;
 
     Gamestate.level = INITIAL_LEVEL;
     Gamestate.score = 0;
@@ -150,6 +152,7 @@ static void set_up_initial_gamestate(void)
 
     raise_all_updates();
 
+    Gamestate.use_hold = false;
     Gamestate.hold = NONE;
     draw_hold(&surf);
 
@@ -603,10 +606,19 @@ static void run_loop(void)
             if (symb != 0)
                 model_update_on_key(symb);
 
+            if ((symb == 'r' || symb == 'R') && Gamestate.game_is_on == false)
+            {
+                draw_initial();
+                set_up_initial_gamestate();
+                goto reset;
+            }
+
         } while (res != 1);
 
         model_update_on_timer();
         draw_view();
+
+    reset:
 
         err = ktimer_reset(Timer_timeout_ms, Timer_type);
         if (err < 0) panic("ktimer_reset(): %d \n", err);
@@ -635,7 +647,7 @@ static void model_update_on_timer(void)
     }
 
     if (Gamestate.cur_fig.type == NONE)
-        model_new_cur_fig();
+        model_new_fig();
     else 
         model_update_field(frame_ct);
 
@@ -643,13 +655,26 @@ static void model_update_on_timer(void)
     return;
 }
 
-static void model_new_cur_fig(void)
+static void model_new_fig(void)
 {
-    Gamestate.cur_fig.type   = Gamestate.next;
     Gamestate.cur_fig.rot    = 0;
     Gamestate.cur_fig.pos_tl = (pair16_t) {.x = FIELD_WIDTH / 2, .y = 0};
+    
+    if (Gamestate.use_hold == false)
+    {
+        Gamestate.cur_fig.type = Gamestate.next;
+        Gamestate.next = get_rand_figure_type();
+        
+        Gamestate.next_updated = true;
+    }
+    else 
+    {
+        Gamestate.cur_fig.type = Gamestate.hold;
+        Gamestate.hold = NONE;
 
-    Gamestate.next = get_rand_figure_type();
+        Gamestate.use_hold = false;
+        Gamestate.hold_updated = true;
+    }
 
     if (figure_pos_is_allowed(&Gamestate.cur_fig) == false)
     {
@@ -658,7 +683,6 @@ static void model_new_cur_fig(void)
     }
 
     Gamestate.cur_fig_updated = true;
-    Gamestate.next_updated = true;
 }
 
 static void model_update_field(uint64_t frame_ct)
@@ -839,6 +863,9 @@ static enum Tetris_ctrl_key int2ctrl_key(int key)
         case 'w': 
         case 'W': return ROT;
 
+        case 'h':
+        case 'H': return HOLD;
+
         default: break;
     }
 
@@ -850,6 +877,14 @@ static void model_process_key(enum Tetris_ctrl_key key)
 {
     if (Gamestate.cur_fig.type == NONE || key == NO_ACTION)
         return;
+
+    if (key == HOLD)
+    {
+        model_process_hold();
+        return;
+    }
+    else 
+        Gamestate.use_hold = false;
 
     struct Figure_info next_pos_fig = Gamestate.cur_fig;
 
@@ -873,6 +908,20 @@ static void model_process_key(enum Tetris_ctrl_key key)
         Gamestate.cur_fig_updated = true;
         Gamestate.pg_updated = true;
     }
+}
+
+static void model_process_hold(void)
+{
+    if (Gamestate.hold == NONE && Gamestate.cur_fig.type != NONE)
+    {
+        Gamestate.hold = Gamestate.cur_fig.type;
+        Gamestate.cur_fig.type = NONE;
+
+        Gamestate.cur_fig_updated = true;
+        Gamestate.hold_updated = true;
+    }
+    else 
+        Gamestate.use_hold = true;
 }
 
 static void model_update_level(void)
