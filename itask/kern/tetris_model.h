@@ -1,5 +1,5 @@
-#ifndef JOS_KERN_TETRIS_H
-#define JOS_KERN_TETRIS_H
+#ifndef JOS_KERN_TETRIS_MODEL_H
+#define JOS_KERN_TETRIS_MODEL_H
 #ifndef JOS_KERNEL
 #error "This is a JOS kernel header; user programs should not #include it"
 #endif
@@ -8,8 +8,10 @@
 
 #include <kern/gpu.h>
 #include <kern/vbe.h>
-#include <kern/graphics.h>
 #include <kern/ktimer.h>
+
+#define FIELD_WIDTH  10
+#define FIELD_HEIGHT 20
 
 static const enum TimerType Timer_type = HPET0;
 
@@ -33,7 +35,7 @@ enum Tetris_ctrl_key
     RIGHT  = 2,
     LEFT   = 3,
     ROT    = 4,
-    HOLD   = 5,
+    HOLD   = 5
 };
 
 typedef enum Figure_type
@@ -69,6 +71,50 @@ typedef struct Figure
     char map[FIGURE_SIZE][FIGURE_SIZE];
 
 } figure_t;
+
+struct Field_elem
+{
+    bool present;
+    color32bpp_t color;
+};
+
+struct Figure_info
+{
+    figure_type_t type;
+    pair16_t pos_tl;
+    unsigned rot;
+};
+
+struct Tetris_gamestate
+{
+    bool game_is_on;
+    bool gamestate_updated;
+
+    struct Field_elem field[FIELD_HEIGHT][FIELD_WIDTH];
+
+    unsigned score;
+    bool score_updated;
+
+    unsigned level;
+    bool level_updated;
+
+    unsigned lines;
+    bool lines_updated;
+
+    struct Figure_info cur_fig;
+    bool cur_fig_updated;
+
+    figure_type_t next;
+    bool next_updated;
+
+    figure_type_t hold;
+    bool hold_updated;
+
+    uint64_t frames_per_cell;
+
+    bool pg_updated;
+    bool use_hold;
+};
 
 const static figure_t Figures[N_BLOCK_TYPES][N_BLOCK_ROT] = 
 {
@@ -221,70 +267,6 @@ const static figure_t Figures[N_BLOCK_TYPES][N_BLOCK_ROT] =
     }
 };
 
-#define BLOCK_SIZE 32U
-#define BLOCK_OUTL_THICKNESS 4U
-#define EMPTY_BLOCK_OUTL_THICKNESS 1U
-
-#define FIELD_WIDTH  10
-#define FIELD_HEIGHT 20
-
-#define BLOCK_NUM ((FIELD_WIDTH) * (FIELD_HEIGHT))
-
-#define FIELD_BAR_OUTL_THICKNESS 5U
-#define FIELD_BAR_WIDTH  (2 * (FIELD_BAR_OUTL_THICKNESS) + (FIELD_WIDTH ) * (BLOCK_SIZE)) 
-#define FIELD_BAR_HEIGHT (2 * (FIELD_BAR_OUTL_THICKNESS) + (FIELD_HEIGHT) * (BLOCK_SIZE))
-
-
-#define STAT_WIDTH  8
-#define STAT_HEIGHT 5
-
-#define STAT_BAR_OUTL_THICKNESS 5U
-#define STAT_BAR_WIDTH  (2 * (STAT_BAR_OUTL_THICKNESS) + (STAT_WIDTH ) * (BLOCK_SIZE)) 
-#define STAT_BAR_HEIGHT (2 * (STAT_BAR_OUTL_THICKNESS) + (STAT_HEIGHT) * (BLOCK_SIZE))
-
-#define STAT_TEXT_BPP 3U
-
-
-#define NEXT_WIDTH  8
-#define NEXT_HEIGHT 6
-
-#define NEXT_BAR_OUTL_THICKNESS 5U
-#define NEXT_BAR_WIDTH  (2 * (NEXT_BAR_OUTL_THICKNESS) + (NEXT_WIDTH ) * (BLOCK_SIZE)) 
-#define NEXT_BAR_HEIGHT (2 * (NEXT_BAR_OUTL_THICKNESS) + (NEXT_HEIGHT) * (BLOCK_SIZE))
-
-#define NEXT_TEXT_BPP 3U
-
-
-#define HOLD_WIDTH  8
-#define HOLD_HEIGHT 6
-
-#define HOLD_BAR_OUTL_THICKNESS 5U
-#define HOLD_BAR_WIDTH  (2 * (HOLD_BAR_OUTL_THICKNESS) + (HOLD_WIDTH ) * (BLOCK_SIZE)) 
-#define HOLD_BAR_HEIGHT (2 * (HOLD_BAR_OUTL_THICKNESS) + (HOLD_HEIGHT) * (BLOCK_SIZE))
-
-#define HOLD_TEXT_BPP 3U
-
-const static color32bpp_t Bg_clr             = {.rgb = 0x000F0F33};
-
-const static color32bpp_t Empty_box_clr      = {.rgb = 0x00080819};
-const static color32bpp_t Empty_box_outl_clr = {.rgb = 0x00333333};
-
-const static color32bpp_t Field_bar_outl_clr = {.rgb = 0x0000FAFF};
-const static color32bpp_t Frame_block_clr    = {.rgb = 0x00686266};
-
-const static color32bpp_t Stat_bar_outl_clr = {.rgb = 0x0000FAFF};
-const static color32bpp_t Stat_bar_bg_clr   = {.rgb = 0x00080819};
-
-const static color32bpp_t Next_bar_outl_clr = {.rgb = 0x0000FAFF};
-const static color32bpp_t Next_bar_bg_clr   = {.rgb = 0x00080819};
-
-const static color32bpp_t Hold_bar_outl_clr = {.rgb = 0x0000FAFF};
-const static color32bpp_t Hold_bar_bg_clr   = {.rgb = 0x00080819};
-
-const static color32bpp_t Red_color         = {.rgb = 0x00E3242B};
-const static color32bpp_t White_color       = {.rgb = 0x00FFFFFF};
-const static color32bpp_t Black_color       = {.rgb = 0x00000000};
-
 int tetris(void);
 
-#endif // JOS_KERN_TETRIS_H
+#endif // JOS_KERN_TETRIS_MODEL_H
