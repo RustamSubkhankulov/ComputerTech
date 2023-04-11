@@ -17,8 +17,10 @@ This is up to me to complete course and add missing functions later.
 Plan
 ----
 To implement TETRIS in JOS, few modules of OS must be added: 
-- implement support for software graphics rendering in the JOS operating system.
-- implement support for input devices (such as keyboard or gamepad)
+- PCI bus support (to find GPU on it)
+- implement support for software graphics rendering 
+- input device to read commands from player(such as keyboard)
+- system timer 
 
 Graphics adapter driver
 -----------------------
@@ -79,13 +81,13 @@ Cache Line Size: Specifies the system cache line size in 32-bit units. A device 
 
 More information about particular types' headers you can find at [OSDev](https://wiki.osdev.org/PCI)
 
-Standard VGA  
---------------------------------------
+Standard VGA using VBE interface 
+---------------------------------
 
-Initially, I planned to implement virtio-vga device support as graphics adapter, but due to the various bugs and device behaviour, that was not stated in documentation, standard vga was chosen. (But you can still find basic initialization sequence of virtio-vga implemented in /examples folder.)
+Serial Port
+------------
 
-VGA device is found over PCI. PCI support described in previous part.
+High Precision Event Timer
+---------------------------
 
 
-
-< More description of this OS module will be written. >
