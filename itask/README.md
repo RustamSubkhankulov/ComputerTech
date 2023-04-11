@@ -63,21 +63,21 @@ The following field descriptions are common to all Header Types:
 | 0x2          | 0x8        | Class code     | Subclass       | Prog IF       | Revision ID     |
 | 0x3          | 0xC        | BIST           | Header type    | Latency Timer | Cache Line Size |
 
-Device ID: Identifies the particular device. Where valid IDs are allocated by the vendor.
-Vendor ID: Identifies the manufacturer of the device. Where valid IDs are allocated by PCI-SIG (the list is here) to ensure uniqueness and 0xFFFF is an invalid value that will be returned on read accesses to Configuration Space registers of non-existent devices.
-Status: A register used to record status information for PCI bus related events.
-Command: Provides control over a device's ability to generate and respond to PCI cycles. Where the only functionality guaranteed to be supported by all devices is, when a 0 is written to this register, the device is disconnected from the PCI bus for all accesses except Configuration Space access.
-Class Code: A read-only register that specifies the type of function the device performs.
-Subclass: A read-only register that specifies the specific function the device performs.
-Prog IF(Programming Interface Byte): A read-only register that specifies a register-level programming interface the device has, if it has any at all.
-Revision ID: Specifies a revision identifier for a particular device. Where valid IDs are allocated by the vendor.
-BIST: Represents that status and allows control of a devices BIST (built-in self test).
-Header Type: Identifies the layout of the rest of the header beginning at byte 0x10 of the header. If bit 7 of this register is set, the device has multiple functions; otherwise, it is a single function device. Types:
+- Device ID: Identifies the particular device. Where valid IDs are allocated by the vendor.
+- Vendor ID: Identifies the manufacturer of the device. Where valid IDs are allocated by PCI-SIG (the list is here) to ensure uniqueness and 0xFFFF is an invalid value that will be returned on read accesses to Configuration Space registers of non-existent devices.
+- Status: A register used to record status information for PCI bus related events.
+- Command: Provides control over a device's ability to generate and respond to PCI cycles. Where the only functionality guaranteed to be supported by all devices is, when a 0 is written to this register, the device is disconnected from the PCI bus for all accesses except Configuration Space access.
+- Class Code: A read-only register that specifies the type of function the device performs.
+- Subclass: A read-only register that specifies the specific function the device performs.
+- Prog IF(Programming Interface Byte): A read-only register that specifies a register-level programming interface the device has, if it has any at all.
+- Revision ID: Specifies a revision identifier for a particular device. Where valid IDs are allocated by the vendor.
+- BIST: Represents that status and allows control of a devices BIST (built-in self test).
+- Header Type: Identifies the layout of the rest of the header beginning at byte 0x10 of the header. If bit 7 of this register is set, the device has multiple functions; otherwise, it is a single function device. Types:
 0x0: a general device
 0x1: a PCI-to-PCI bridge
 0x2: a PCI-to-CardBus bridge.
-Latency Timer: Specifies the latency timer in units of PCI bus clocks.
-Cache Line Size: Specifies the system cache line size in 32-bit units. A device can limit the number of cacheline sizes it can support, if a unsupported value is written to this field, the device will behave as if a value of 0 was written.
+- Latency Timer: Specifies the latency timer in units of PCI bus clocks.
+- Cache Line Size: Specifies the system cache line size in 32-bit units. A device can limit the number of cacheline sizes it can support, if a unsupported value is written to this field, the device will behave as if a value of 0 was written.
 
 More information about particular types' headers you can find at [OSDev](https://wiki.osdev.org/PCI)
 
@@ -90,4 +90,5 @@ Serial Port
 High Precision Event Timer
 ---------------------------
 
-
+Finally, the game itself
+-------------------------
