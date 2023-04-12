@@ -51,7 +51,7 @@ int ktimer_start(int64_t timeout_ms, enum TimerType type)
     int check_res = check_timer_type(type);
     if (check_res < 0) return check_res;
 
-    Timeout_ms    = timeout_ms;
+    Timeout_ms = timeout_ms;
     Timer_type = type;
 
     Prev_tsc = read_tsc();
