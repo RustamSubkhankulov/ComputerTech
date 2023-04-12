@@ -42,7 +42,7 @@ PCI bus support firstly has to be added.
 Simple implementation for x86 runs over ports 0xCF8 (PCI_CONFIGURATION_ADDRESS_PORT) 
 and 0xCFC (PCI_CONFIGURATION_DATA_PORT).
 
-PCI-support module of OS consists of kern/pci.c and kern/pci.h. 
+PCI-support module of OS consists of [kern/pci.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/pci.c) and [kern/pci.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/pci.h). 
 
 Two 32-bit I/O locations are used, the first location (0xCF8) is named CONFIG_ADDRESS, and the second (0xCFC) is called CONFIG_DATA. CONFIG_ADDRESS specifies the configuration address that is required to be accesses, while accesses to CONFIG_DATA will actually generate the configuration access and will transfer the data to or from the CONFIG_DATA register.
 
@@ -84,11 +84,19 @@ More information about particular types' headers you can find at [OSDev](https:/
 Standard VGA using VBE interface 
 ---------------------------------
 
+See [kern/gpu.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/gpu.c), [kern/gpu.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/gpu.h), [kern/vbe.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/vbe.c), [kern/vbe.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/vbe.h), [kern/graphics.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/graphics.c), [kern/graphics.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/graphics.h)
+
 Serial Port
 ------------
+
+See [kern/console.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/console.c)
 
 High Precision Event Timer
 ---------------------------
 
+See [kern/ktimer.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/ktimer.c), [kern/ktimer.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/ktimer.h), [kern/timer.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/timer.c). [kern/timer.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/timer.h)
+
 Finally, the game itself
 -------------------------
+
+See [kern/tetris_model.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/tetris_model.c), [kern/tetris_model.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/tetris_model.h), [kern/tetris_view.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/tetris_view.c), [kern/tetris_view.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/tetris_view.h)
