@@ -166,12 +166,6 @@ static void model_update_on_timer(void)
 
     static uint64_t frame_ct  = 0;
 
-    if (Gamestate.lines_updated == true
-     && Gamestate.cur_fig.type == NONE)
-    {
-        model_update_level();
-    }
-
     if (Gamestate.cur_fig.type == NONE)
         model_new_fig();
     else 
@@ -327,7 +321,11 @@ static void model_remove_filled_lines(void)
     }
 
     if (removed_lines > 0)
+    {
         model_update_score(removed_lines);
+        model_update_level();
+    }
+
 }
 
 static void model_update_score(unsigned removed_lines)
