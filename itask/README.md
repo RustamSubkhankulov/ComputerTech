@@ -145,7 +145,7 @@ High Precision Event Timer
 
 To implement main game loop of Tetris at particular framerate, timer support is necessary. 
 
-To measure precise time intervals, tsc is used in conjunction with the HPET timer. The timer measures the processor frequency, and the rtsc command reads the number of processor cycles.
+To measure precise time intervals, tsc is used in conjunction with the HPET timer. The timer measures the processor frequency, and the rdtsc command reads the number of processor cycles.
 
 See [kern/ktimer.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/ktimer.c), [kern/ktimer.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/ktimer.h), [kern/timer.c](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/timer.c). [kern/timer.h](https://github.com/RustamSubkhankulov/ComputerTech/blob/main/itask/kern/timer.h)
 
